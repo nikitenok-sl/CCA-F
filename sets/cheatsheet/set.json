@@ -1,0 +1,77 @@
+{
+  "name": "Шпаргалка",
+  "blurb": "по community-шпаргалке",
+  "title": "Тренажёр по шпаргалке CCAR-F",
+  "source": "cheatsheet.md + гайд v1.0",
+  "sub": "Второй набор вопросов к Claude Certified Architect – Foundations. Построен по community-шпаргалке и сверен с официальным гайдом и документацией. Вопросы на английском, разборы на русском.",
+  "footer": "Неофициальный тренажёр, не связан с Anthropic. Вопросы составлены по community-шпаргалке <code>cheatsheet.md</code> и сверены с Exam Guide v1.0, документацией Claude Code и спецификацией MCP. Утверждения шпаргалки, которые с ними расходятся, в вопросы не попали: список во вкладке «Конспект». Это не вопросы реального экзамена. Прогресс каждого набора хранится только в этом браузере.",
+  "storageKey": "ccarf.sheet.v1",
+  "defaultView": "practice",
+  "notesTab": "Конспект",
+  "progressLabel": "Точность по доменам",
+  "files": [
+    "s1.json",
+    "s2.json",
+    "s3.json",
+    "s4.json",
+    "s5.json"
+  ],
+  "requires": [
+    "sheet"
+  ],
+  "flag": null,
+  "group": {
+    "field": "sheet",
+    "label": "Раздел шпаргалки",
+    "all": "Все разделы шпаргалки"
+  },
+  "countNote": "{n} вопр. · {groups} разделов",
+  "progress": "domain",
+  "cardSource": "Раздел шпаргалки: {sheet}",
+  "examRule": "Полный вариант: все {n} вопросов банка, по 2 минуты на вопрос. Вопросы сгруппированы по сценариям, как на реальном экзамене.",
+  "exam": {
+    "full": {
+      "label": "Весь банк"
+    },
+    "short": {
+      "label": "Короткий прогон",
+      "per": {
+        "1": 5,
+        "2": 3,
+        "3": 4,
+        "4": 4,
+        "5": 4
+      }
+    }
+  },
+  "palette": {
+    "light": {
+      "paper": "#F1EEF4",
+      "dot": "#DCD4E2",
+      "sheet": "#FCFBFD",
+      "ink": "#201827",
+      "ink-2": "#53475B",
+      "ink-3": "#7D7185",
+      "rule": "#D8CEDF",
+      "track": "#E6DFEB",
+      "form": "#6B3A7D",
+      "form-soft": "#EDE2F2",
+      "graphite": "#2A2430",
+      "on-fill": "#FCFBFD"
+    },
+    "dark": {
+      "paper": "#131016",
+      "dot": "#201A25",
+      "sheet": "#1A161F",
+      "ink": "#ECE6F0",
+      "ink-2": "#B8ABC0",
+      "ink-3": "#8F8398",
+      "rule": "#372D3F",
+      "track": "#2C2434",
+      "form": "#C69BD8",
+      "form-soft": "#33233E",
+      "graphite": "#E6DEEB",
+      "on-fill": "#130F16"
+    }
+  }
+}

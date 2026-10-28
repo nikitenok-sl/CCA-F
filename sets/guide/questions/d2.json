@@ -1,0 +1,257 @@
+[
+  {
+    "id": "d2-01",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your document analysis subagent has two tools. analyze_content is described as \"Analyzes content and extracts key information\"; analyze_document is described as \"Analyzes a document and extracts key information.\" analyze_content was built to parse web search snippets passed on by the search subagent, and it drops page numbers. Logs show that 31% of uploaded PDFs are routed to analyze_content, so their citations in final reports lack page references. What is the most effective fix?",
+    "options": [
+      {"key": "A", "text": "Add a system prompt rule that the subagent must call analyze_document whenever the input is a PDF or another uploaded file."},
+      {"key": "B", "text": "Rename analyze_content to extract_web_results and rewrite descriptions to state input type, output, and when to use each."},
+      {"key": "C", "text": "Add a PostToolUse hook that detects page-less output from analyze_content and reruns the same input through analyze_document."},
+      {"key": "D", "text": "Move the subagent to a higher-tier model so it can infer from each input which of the two similar tools is the right fit."}
+    ],
+    "answer": ["B"],
+    "explanation_ru": "Корень проблемы в почти одинаковых описаниях двух инструментов: модель выбирает инструмент прежде всего по описанию, и при перекрытии маршрутизация становится ненадежной. Гайд приводит именно этот пример и его исправление: переименовать analyze_content в extract_web_results и дать ему описание, привязанное к веб-результатам. Имя и описание, которые называют тип входа, формат выхода и границы применения, устраняют функциональное перекрытие.",
+    "why_wrong_ru": {
+      "A": "Правило в промпте вероятностно и лечит один симптом, а два инструмента с одинаковыми описаниями продолжают конкурировать за любой нестандартный вход.",
+      "C": "Хук исправляет последствия ниже по потоку и удваивает вызовы, но причина, перекрывающиеся описания, остается на месте.",
+      "D": "Более сильная модель не различит инструменты надежно, если их описания почти совпадают, ведь проблема в интерфейсе, а не в модели."
+    },
+    "takeaway_ru": "Похожие описания инструментов ведут к путанице: переименуй и разведи описания по входу и назначению."
+  },
+  {
+    "id": "d2-02",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Your support agent's process_refund description is detailed: it requires a verified customer ID and an order the customer has explicitly asked to refund, and it states that the tool must not be used for policy questions. Yet 14% of purely informational questions, such as \"How long do refunds usually take?\", trigger a process_refund call that fails validation. The system prompt contains the line: \"Whenever a customer mentions a refund, act on it immediately with the refund tool.\" What is the most likely root cause?",
+    "options": [
+      {"key": "A", "text": "The process_refund description is still too short, so the model cannot tell when the tool should not be used."},
+      {"key": "B", "text": "The agent has too many tools available, which raises decision complexity and causes the wrong tool to be chosen."},
+      {"key": "C", "text": "The model lacks few-shot examples showing how to answer refund timing questions without calling any tool."},
+      {"key": "D", "text": "The keyword-triggered system prompt instruction ties the word \"refund\" to the tool and overrides its description."}
+    ],
+    "answer": ["D"],
+    "explanation_ru": "Инструкция в системном промпте срабатывает на слово «refund» и создает ассоциацию «упомянут возврат, значит вызвать инструмент возврата», которая перебивает хорошо написанное описание process_refund. Гайд выделяет это отдельно: формулировки системного промпта, чувствительные к ключевым словам, могут переопределять качественные описания инструментов, поэтому системный промпт нужно проверять на такие инструкции. Исправление: переписать инструкцию через намерение клиента (явный запрос возврата по конкретному заказу), а не через упоминание слова.",
+    "why_wrong_ru": {
+      "A": "По условию описание уже подробное и прямо исключает вопросы о политике, поэтому удлинять его бесполезно, пока промпт тянет модель в другую сторону.",
+      "B": "У агента всего четыре инструмента (get_customer, lookup_order, process_refund, escalate_to_human), перегрузки инструментами здесь нет.",
+      "C": "Few-shot примеры могут частично замаскировать симптом, но конфликтующая инструкция, которая и вызывает ошибку, останется в промпте."
+    },
+    "takeaway_ru": "Описание инструмента хорошее, а выбор плохой: ищи keyword-инструкцию в системном промпте."
+  },
+  {
+    "id": "d2-03",
+    "domain": 2,
+    "task": "2.2",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A customer asks for a refund on an order delivered 47 days ago, and process_refund rejects it because policy allows refunds only within 30 days of delivery. The tool returns isError: true with the text \"Request rejected (code 4012).\" Logs show the agent retrying the call three times, then telling the customer \"We're having technical difficulties, please try again later.\" Customers return the next day and hit the same wall. How should the tool's error response be redesigned?",
+    "options": [
+      {"key": "A", "text": "Mark it as a business error with retriable: false and a customer-friendly explanation that the 30-day window has passed."},
+      {"key": "B", "text": "Return a success response with refunded: false so the agent stops treating the policy rejection as a failure to retry."},
+      {"key": "C", "text": "Keep the current response and add a system prompt rule limiting the agent to one retry of process_refund per conversation."},
+      {"key": "D", "text": "Route every rejected refund straight to escalate_to_human so that a person, not the agent, explains the policy decision."}
+    ],
+    "answer": ["A"],
+    "explanation_ru": "Отказ по политике относится к бизнес-ошибкам: повтор вызова не изменит результат, поэтому ответ инструмента должен явно содержать retriable: false и понятное клиенту объяснение причины. Гайд требует для нарушений бизнес-правил именно эту пару, чтобы агент не тратил попытки и мог корректно объяснить ситуацию клиенту. Обезличенный «code 4012» не позволяет агенту отличить отказ по политике от технического сбоя, отсюда повторы и выдуманные «технические трудности».",
+    "why_wrong_ru": {
+      "B": "Маскировка отказа под успех скрывает ошибку: агент не получает ни сигнала о невыполненной операции, ни причины, которую нужно объяснить клиенту.",
+      "C": "Лимит повторов в промпте вероятностен и не сообщает агенту причину отказа, поэтому клиент по-прежнему услышит неверное объяснение.",
+      "D": "Политика здесь однозначна, и эскалация каждого отказа перегружает людей и снижает first-contact resolution без всякой необходимости."
+    },
+    "takeaway_ru": "Нарушение бизнес-правила: retriable: false плюс объяснение, понятное клиенту."
+  },
+  {
+    "id": "d2-04",
+    "domain": 2,
+    "task": "2.2",
+    "scenario": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your productivity agent uses an internal MCP server with tools such as query_build_logs and get_repo_settings. Every failure returns the normal text content \"Operation failed\" with no other signal. Logs show the agent retrying malformed date filters five times, abandoning timeouts that would succeed on a second try, repeatedly requesting repositories the user has no access to, and sometimes summarizing \"Operation failed\" as if it were log data. Which two changes to the server's error responses address these problems? (Select TWO.)",
+    "options": [
+      {"key": "A", "text": "Raise the agent's retry limit for all MCP tools so that transient failures get enough attempts to eventually succeed."},
+      {"key": "B", "text": "Set the MCP isError flag on failed calls so the agent can tell a failure apart from the content of a successful result."},
+      {"key": "C", "text": "Add a system prompt instruction telling the agent to retry any failed tool call exactly twice before moving on."},
+      {"key": "D", "text": "Return an empty result set for failed calls so the agent continues the task instead of getting stuck on errors."},
+      {"key": "E", "text": "Include errorCategory (transient, validation, permission), an isRetryable boolean, and a human-readable description."}
+    ],
+    "answer": ["B", "E"],
+    "explanation_ru": "Здесь две разные проблемы. Сбой приходит как обычный контент, и агент принимает «Operation failed» за данные, а флаг isError в MCP явно сообщает агенту, что вызов завершился ошибкой. Единообразное «Operation failed» к тому же не дает выбрать стратегию восстановления: errorCategory и isRetryable позволяют повторить transient-сбой, исправить ввод при validation и прекратить попытки при permission, как и описано в гайде.",
+    "why_wrong_ru": {
+      "A": "Больше повторов только умножает напрасные попытки для validation и permission ошибок, которые повтор не исправит.",
+      "C": "Единое правило повторов не различает типы ошибок, и validation и permission ошибки по-прежнему будут повторяться впустую.",
+      "D": "Пустой результат вместо ошибки маскирует сбой под успешный запрос без совпадений, и агент сделает неверные выводы."
+    },
+    "takeaway_ru": "isError отличает сбой от данных; errorCategory и isRetryable подсказывают, как восстанавливаться."
+  },
+  {
+    "id": "d2-05",
+    "domain": 2,
+    "task": "2.3",
+    "scenario": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "To simplify setup, your research system gives every subagent the same 18 tools. Traces show two problems. The synthesis agent launches its own web searches in 40% of runs instead of working from the findings it was given, and tool selection errors have risen across all agents. The document analysis agent uses its generic fetch_url tool to pull search engine result pages and marketing sites, then analyzes them as if they were source documents. Which two changes best address these problems? (Select TWO.)",
+    "options": [
+      {"key": "A", "text": "Restrict each subagent to the 4-5 tools its role needs, removing web search tools from the synthesis agent."},
+      {"key": "B", "text": "Add a system prompt rule telling the synthesis agent to avoid web searches unless its findings seem incomplete."},
+      {"key": "C", "text": "Keep all 18 tools but rewrite each description in more detail so every subagent can pick tools more accurately."},
+      {"key": "D", "text": "Replace fetch_url with a load_document tool that validates that the URL points to a document before loading it."},
+      {"key": "E", "text": "Add a PostToolUse hook that strips marketing language from fetched pages before document analysis begins."}
+    ],
+    "answer": ["A", "D"],
+    "explanation_ru": "Гайд прямо говорит, что 18 инструментов вместо 4-5 снижают надежность выбора, а агенты с инструментами вне своей специализации склонны ими злоупотреблять, как синтезирующий агент, который сам ходит в веб. Поэтому каждому субагенту оставляют только инструменты его роли. Вторая проблема решается заменой общего инструмента ограниченной альтернативой: load_document проверяет, что URL ведет на документ, вместо универсального fetch_url.",
+    "why_wrong_ru": {
+      "B": "Инструкция в промпте вероятностна и оставляет у агента ненужные ему инструменты, а условие «если находки кажутся неполными» еще и размыто.",
+      "C": "Даже хорошие описания не снимают сложность выбора из 18 инструментов и не лишают синтезирующего агента доступа к веб-поиску.",
+      "E": "Хук обрабатывает уже загруженный неподходящий контент ниже по потоку, и страницы поисковой выдачи все равно анализируются как документы."
+    },
+    "takeaway_ru": "Каждому агенту только инструменты его роли; общий инструмент замени ограниченной альтернативой."
+  },
+  {
+    "id": "d2-06",
+    "domain": 2,
+    "task": "2.3",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your document analysis subagent should first call extract_metadata (title, authors, publication date) and only then call enrichment tools such as lookup_citation_count and find_related_work, which depend on that metadata. In 22% of runs it calls an enrichment tool first, and those reports lack publication dates. A teammate set tool_choice to \"any\" on every request, but the ordering problem persists. Which configuration guarantees the correct order?",
+    "options": [
+      {"key": "A", "text": "Keep tool_choice \"any\" and add a system prompt rule that extract_metadata must always be the first tool called."},
+      {"key": "B", "text": "Force extract_metadata with {\"type\": \"tool\", \"name\": \"extract_metadata\"} on every request made for that document."},
+      {"key": "C", "text": "Force extract_metadata with {\"type\": \"tool\", \"name\": \"extract_metadata\"} on the first request, then enrich in follow-up turns."},
+      {"key": "D", "text": "Use tool_choice \"auto\" and place extract_metadata first in the tools array so the model treats it as the default first step."}
+    ],
+    "answer": ["C"],
+    "explanation_ru": "Принудительный выбор tool_choice {\"type\": \"tool\", \"name\": \"extract_metadata\"} гарантирует, что первым будет вызван именно этот инструмент, а шаги обогащения выполняются в последующих ходах. Гайд описывает ровно этот паттерн: форсировать конкретный инструмент на первом шаге, затем обрабатывать остальное в follow-up turns. Значение \"any\" гарантирует лишь, что модель вызовет какой-то инструмент вместо текстового ответа, но не какой именно.",
+    "why_wrong_ru": {
+      "A": "\"any\" не определяет, какой инструмент будет выбран, а правило в промпте вероятностно, поэтому нарушения порядка сохранятся.",
+      "B": "Если форсировать extract_metadata на каждом запросе, модель никогда не сможет вызвать инструменты обогащения и будет снова и снова извлекать метаданные.",
+      "D": "При \"auto\" модель может выбрать любой инструмент или ответить текстом, а порядок в массиве tools не задает порядок вызовов."
+    },
+    "takeaway_ru": "Нужен гарантированный первый шаг: форсируй инструмент на первом запросе, остальное в следующих ходах."
+  },
+  {
+    "id": "d2-07",
+    "domain": 2,
+    "task": "2.4",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team wants Claude Code to read and update Jira tickets. Every developer who clones the repository should get the integration automatically and authenticate with their own API token. One developer also wants to trial an experimental profiling MCP server without affecting teammates. A community-maintained Jira MCP server already covers every standard operation the team needs. Which setup is most appropriate?",
+    "options": [
+      {"key": "A", "text": "Build a custom Jira MCP server, register it in .mcp.json, and add the profiling server to the same file as a separate entry."},
+      {"key": "B", "text": "Configure the community Jira server in each developer's ~/.claude.json with their token, and the profiling server in .mcp.json."},
+      {"key": "C", "text": "Add the community Jira server to the project's .mcp.json using ${JIRA_API_TOKEN}, and the profiling server to ~/.claude.json."},
+      {"key": "D", "text": "Add the community Jira server to .mcp.json with a shared team token committed to the repo, and the profiling server to ~/.claude.json."}
+    ],
+    "answer": ["C"],
+    "explanation_ru": "Общий для команды сервер настраивается в проектном .mcp.json, который хранится в репозитории, а токен подставляется через расширение переменных окружения (по аналогии с ${GITHUB_TOKEN} из гайда), поэтому секрет не коммитится и каждый работает со своим токеном. Личный экспериментальный сервер относится к пользовательской области ~/.claude.json и не затрагивает коллег. Для стандартной интеграции вроде Jira гайд рекомендует готовый community-сервер, а собственные серверы оставлять для специфичных командных процессов.",
+    "why_wrong_ru": {
+      "A": "Писать свой Jira-сервер для стандартных операций избыточно, а экспериментальный сервер в .mcp.json получит вся команда.",
+      "B": "Области перепутаны: общая интеграция в ~/.claude.json не придет к коллегам при клонировании, а личный эксперимент в .mcp.json попадет ко всем.",
+      "D": "Закоммиченный токен означает утечку секрета и общий доступ под одной учеткой, и именно этого позволяет избежать подстановка переменных окружения."
+    },
+    "takeaway_ru": "Общий сервер: .mcp.json с ${TOKEN}. Личный эксперимент: ~/.claude.json."
+  },
+  {
+    "id": "d2-08",
+    "domain": 2,
+    "task": "2.4",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team added an MCP server exposing search_code_index, which returns symbol definitions, cross-repository callers, and call graphs from a prebuilt index. Its description reads \"Searches code.\" Over two weeks, the agent used it for under 5% of \"who calls this function?\" questions, running built-in Grep instead, which misses callers in other repositories and dynamically registered handlers. The server connects normally and the tool is listed in every session. What is the most effective first step?",
+    "options": [
+      {"key": "A", "text": "Expand the description to explain the index's capabilities, outputs, and when it beats Grep, such as cross-repo callers."},
+      {"key": "B", "text": "Remove Grep from the agent's allowed tools so it has no alternative but to call search_code_index for every code search."},
+      {"key": "C", "text": "Move the server's config into the project's .mcp.json so that its tools are loaded ahead of the built-in tool set."},
+      {"key": "D", "text": "Add a hook that intercepts every Grep call and rewrites it into an equivalent search_code_index request instead."}
+    ],
+    "answer": ["A"],
+    "explanation_ru": "Модель выбирает инструменты по описаниям, а «Searches code» ничем не отличается от встроенного Grep, поэтому агент берет привычный инструмент. Гайд прямо называет решение: расширить описание MCP-инструмента, подробно объяснив его возможности и выходные данные, чтобы агент не предпочитал встроенные инструменты вроде Grep более мощному MCP-инструменту. Это дешевый первый шаг, который бьет в корень проблемы.",
+    "why_wrong_ru": {
+      "B": "Удаление Grep лишает агента нужного инструмента для поиска литералов и сообщений об ошибках, а пустое описание так и остается причиной.",
+      "C": "Инструменты всех настроенных MCP-серверов обнаруживаются при подключении и доступны одновременно, область конфигурации не задает приоритет выбора.",
+      "D": "Перехват и переписывание всех вызовов Grep избыточен и ломает обычный поиск по содержимому, хотя достаточно исправить описание."
+    },
+    "takeaway_ru": "Агент игнорирует мощный MCP-инструмент: подробно опиши его возможности и выходные данные."
+  },
+  {
+    "id": "d2-09",
+    "domain": 2,
+    "task": "2.4",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your productivity agent connects to an internal MCP server for the engineering wiki, which holds about 1,200 pages in a deep hierarchy. The server exposes only two tools: search_pages and get_page. Traces show that for a typical question the agent makes 15-25 exploratory search_pages and get_page calls just to learn which sections exist before it finds the relevant runbook, consuming most of its context. What change best reduces this exploratory overhead?",
+    "options": [
+      {"key": "A", "text": "Add a list_all_pages tool that returns the full text of all 1,200 pages in one call so the agent can scan everything at once."},
+      {"key": "B", "text": "Raise the agent's context budget and iteration limit so the exploratory calls can finish before the context fills up."},
+      {"key": "C", "text": "Add a system prompt instruction telling the agent to make at most five wiki tool calls when answering each question."},
+      {"key": "D", "text": "Expose the wiki's documentation hierarchy as an MCP resource so the agent can see what content exists before calling tools."}
+    ],
+    "answer": ["D"],
+    "explanation_ru": "MCP-ресурсы предназначены для публикации каталогов контента, например иерархии документации, чтобы агент видел доступные данные без исследовательских вызовов инструментов. Имея каталог разделов, агент сразу запрашивает нужную страницу через get_page. Гайд разделяет роли: ресурсы для каталогов контента, инструменты для действий.",
+    "why_wrong_ru": {
+      "A": "Выгрузка полного текста всех страниц переполнит контекст сильнее, чем исследовательские вызовы, ведь агенту нужен каталог, а не весь контент.",
+      "B": "Больший бюджет контекста и итераций лишь позволяет потратить больше ресурсов на ту же исследовательскую работу, не устраняя ее.",
+      "C": "Лимит вызовов без знания структуры вики просто заставит агента сдаться раньше, так и не найдя нужный runbook."
+    },
+    "takeaway_ru": "Агент тратит вызовы, чтобы узнать, что вообще есть: опубликуй каталог как MCP-ресурс."
+  },
+  {
+    "id": "d2-10",
+    "domain": 2,
+    "task": "2.5",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You ask Claude Code to change retry_limit: 3 to retry_limit: 5 in the payments block of a 600-line generated YAML file. The same line, surrounded by dozens of identical lines, appears in nine service blocks. The session log shows six consecutive Edit calls failing with a non-unique match error, each with a slightly different old string, before Claude gives up. Which approach makes this change reliably?",
+    "options": [
+      {"key": "A", "text": "Use Glob to find every YAML file containing retry_limit: 3, then run the same Edit call on each matching file."},
+      {"key": "B", "text": "Read the full file, then Write it back with only the payments block's retry_limit value changed to 5."},
+      {"key": "C", "text": "Use Bash to run sed that replaces the first occurrence of retry_limit: 3 in the file with retry_limit: 5."},
+      {"key": "D", "text": "Allow more attempts so Claude can keep varying the Edit old string until one match is finally accepted."}
+    ],
+    "answer": ["B"],
+    "explanation_ru": "Edit работает через уникальное совпадение текста, и когда якорь неуникален, повторные попытки бесполезны. Гайд описывает надежный fallback: загрузить файл целиком через Read, а затем записать его через Write с нужным изменением только в одном месте. Так Claude точно контролирует, какой из девяти одинаковых блоков меняется.",
+    "why_wrong_ru": {
+      "A": "Glob ищет файлы по шаблону пути, а не по содержимому, и проблема не в поиске файла: Edit в нем все равно не найдет уникальный якорь.",
+      "C": "sed по первому совпадению изменит первый сервисный блок, а не payments, то есть тихо внесет неверную правку.",
+      "D": "Больше попыток не сделает неуникальный текст уникальным, Claude просто потратит больше вызовов впустую."
+    },
+    "takeaway_ru": "Edit не находит уникальный якорь: Read всего файла, затем Write."
+  },
+  {
+    "id": "d2-11",
+    "domain": 2,
+    "task": "2.5",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer asks your agent to find every place that calls the legacy formatCurrency function before it is removed. The agent runs Grep for \"formatCurrency\" and reports 6 call sites. After the removal, 41 more break: lib/format/index.ts and shared/money.ts re-export the function under the names fmtMoney and toDisplayAmount, which most modules import instead. Which exploration approach would have found all call sites?",
+    "options": [
+      {"key": "A", "text": "Use Glob with the pattern **/*formatCurrency* to find every file related to the function, then Read each match."},
+      {"key": "B", "text": "Read every file under src/ upfront so the agent has the whole codebase in context before answering the question."},
+      {"key": "C", "text": "Identify all names the wrapper modules export for the function, then Grep the codebase for each of those names."},
+      {"key": "D", "text": "Rerun Grep for \"formatCurrency\" with a case-insensitive pattern so that it also matches renamed variants of it."}
+    ],
+    "answer": ["C"],
+    "explanation_ru": "Модули-обертки переэкспортируют функцию под другими именами, поэтому поиск только по исходному имени пропускает большинство вызовов. Гайд описывает этот навык: сначала определить все экспортируемые имена в обертках, затем искать каждое из них через Grep по всей кодовой базе. Это часть инкрементального подхода: Grep для точек входа, Read для следования импортам.",
+    "why_wrong_ru": {
+      "A": "Glob сопоставляет пути файлов, а не их содержимое, а вызовы находятся внутри файлов с совсем другими именами.",
+      "B": "Чтение всех файлов заранее расходует контекст и противоречит инкрементальному исследованию Grep, затем Read, которое рекомендует гайд.",
+      "D": "Регистронезависимый поиск не найдет fmtMoney и toDisplayAmount, потому что это другие имена, а не варианты регистра."
+    },
+    "takeaway_ru": "Вызовы через обертки: сначала собери все экспортируемые имена, потом Grep по каждому."
+  }
+]

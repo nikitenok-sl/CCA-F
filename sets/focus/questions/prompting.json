@@ -1,0 +1,788 @@
+[
+  {
+    "id": "f-criteria-01",
+    "domain": 4,
+    "task": "4.1",
+    "scenario": 5,
+    "focus": "Явные критерии в промптах",
+    "targets": [
+      "d4-01"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI reviewer's prompt includes \"Flag performance problems in the changed code.\" Over three weeks, developers dismissed 71% of performance findings. Nearly all dismissed ones are the same kind: suggestions to replace `map` with a `for` loop or to cache an array's `length` in arrays of under 20 items, and they reappear on every rerun of the same PR. A tech lead proposes posting only findings that appear in at least two of three runs. What is the most effective change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Run the review three times per PR and post only the performance findings that appear in at least two of the runs."
+      },
+      {
+        "key": "B",
+        "text": "Ask the model to rate each finding's production impact from 1 to 10 and post only those rated 8 or higher."
+      },
+      {
+        "key": "C",
+        "text": "Replace it with explicit criteria: flag N+1 queries and unbounded loops over input; skip micro-optimizations."
+      },
+      {
+        "key": "D",
+        "text": "Reword the instruction to \"Flag only performance problems that really matter in production; be conservative.\""
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Инструкция «Flag performance problems» не говорит, что считать проблемой, и модель стабильно флагует микрооптимизации. Явные категориальные критерии (репортить N+1 запросы и неограниченные циклы по входным данным, пропускать микрооптимизации) напрямую убирают этот класс ложных срабатываний. Консенсус нескольких прогонов отсекает только случайный шум, а здесь ложные находки повторяются в каждом прогоне и пройдут фильтр.",
+    "why_wrong_ru": {
+      "A": "Ложные находки воспроизводятся в каждом прогоне, поэтому фильтр «2 из 3» их пропустит, а редкие реальные находки может отсечь.",
+      "B": "Самооценка влияния не откалибрована и не заменяет критерия: модель уверенно оценит микрооптимизацию как важную.",
+      "D": "Это та же расплывчатая инструкция с усилителем, а такие формулировки почти не повышают precision."
+    },
+    "takeaway_ru": "Систематический ложный класс находок убирают явным skip-критерием, а не консенсусом прогонов.",
+    "signal_ru": "«the same kind» и «reappear on every rerun» → ошибка систематическая, консенсус её не отфильтрует; однотипный ложный класс → явный skip-критерий."
+  },
+  {
+    "id": "f-criteria-02",
+    "domain": 4,
+    "task": "4.1",
+    "scenario": 5,
+    "focus": "Явные критерии в промптах",
+    "targets": [
+      "d4-02"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your PR reviewer posts findings in four categories. October telemetry: test-quality findings (assertion messages, test naming, setup duplication) are dismissed 72% of the time, and developers say they now scroll past every bot comment. Security findings are dismissed 18%: almost all of those flag `dangerouslySetInnerHTML` where the value comes from the team's `sanitizeHtml()` wrapper, yet the category also caught three real XSS bugs this month. Which TWO changes best address these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Temporarily disable the test-quality category while its criteria are rewritten; keep the others posting."
+      },
+      {
+        "key": "B",
+        "text": "Pause the whole reviewer until every category's dismissal rate is below 10%, then re-enable all four categories."
+      },
+      {
+        "key": "C",
+        "text": "Have the model self-rate confidence on every finding and hide findings below 0.8 in all four categories."
+      },
+      {
+        "key": "D",
+        "text": "Add few-shot examples contrasting sanitizeHtml() output with raw user input, with reasoning for each verdict."
+      },
+      {
+        "key": "E",
+        "text": "Temporarily disable the security category as well, until its false positives on sanitized values are gone."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно. Подпроблема 1: категория test-quality с 72% отклонений подрывает доверие ко всем находкам, поэтому её временно выключают на время переписывания критериев, а точные категории продолжают работать (A). Подпроблема 2: security в целом полезна, ложные срабатывания идут от одного узкого допустимого паттерна, и few-shot примеры с рассуждением, отличающие вывод `sanitizeHtml()` от сырого ввода, учат модель этой границе (D). Отключать security нельзя, она ловит реальные XSS.",
+    "why_wrong_ru": {
+      "B": "Остановка всего ревьюера выключает и точные категории, хотя основной шум идёт от одной категории.",
+      "C": "Самооценка уверенности не откалибрована и не задаёт границу между допустимым и опасным паттерном.",
+      "E": "Security поймала три реальных XSS, а её ложные срабатывания узкие и лечатся примерами, а не отключением."
+    },
+    "takeaway_ru": "Шумную категорию выключи временно; полезную категорию с узким ложным паттерном уточни few-shot примерами.",
+    "signal_ru": "«72%» и «scroll past every bot comment» → временно выключить test-quality; «caught three real XSS bugs» и один узкий паттерн → оставить security и дать few-shot."
+  },
+  {
+    "id": "f-criteria-03",
+    "domain": 4,
+    "task": "4.1",
+    "scenario": 5,
+    "focus": "Явные критерии в промптах",
+    "targets": [
+      "d4-02"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your review prompt already defines severity in prose: critical means exploitable or data-losing, high means a likely production bug, medium means a bug on rare paths, and low means a maintainability concern. Still, last month the reviewer labeled a missing `await` before a database write \"critical\" in four PRs and \"medium\" in five, and an unescaped value in a log line ranged from \"low\" to \"high\". What change will make severity labels consistent?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Run each review three times and give every finding the severity label chosen by the majority of runs."
+      },
+      {
+        "key": "B",
+        "text": "Keep the definitions and add concrete code snippets for each level, showing typical findings at that level."
+      },
+      {
+        "key": "C",
+        "text": "Add \"Apply severity levels strictly; when unsure between two levels, always choose the lower one\" to the prompt."
+      },
+      {
+        "key": "D",
+        "text": "Ask for a confidence score with each finding and automatically downgrade low-confidence findings to low."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Прозаические определения уже есть, и они не дают стабильной классификации: модель по-разному сопоставляет конкретный код с абстрактными словами. Гайд рекомендует задавать severity явными критериями с конкретными примерами кода для каждого уровня, тогда модель сравнивает находку с эталоном. Голосование трёх прогонов лишь маскирует разброс, но не задаёт границу между уровнями.",
+    "why_wrong_ru": {
+      "A": "Мажоритарное голосование усредняет разброс, но не определяет, какой уровень правильный, и утраивает стоимость.",
+      "C": "Правило «при сомнении ниже» систематически занижает severity и не объясняет границу между уровнями.",
+      "D": "Самооценка уверенности не откалибрована и смешивает уверенность модели с серьёзностью находки."
+    },
+    "takeaway_ru": "Severity стабилизируют примеры кода для каждого уровня, а не новые слова или голосование.",
+    "signal_ru": "«already defines severity in prose», но один и тот же код получает разные уровни → не хватает эталонных примеров кода на уровень, а не голосования."
+  },
+  {
+    "id": "f-criteria-04",
+    "domain": 4,
+    "task": "4.1",
+    "scenario": 5,
+    "focus": "Явные критерии в промптах",
+    "targets": [
+      "d4-01"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your CI reviewer's findings are dismissed 58% of the time, and the current prompt ends with \"Use good judgment and avoid noise.\" You are drafting replacement lines and want each line to measurably raise precision on the next 200 PRs. Which TWO of the drafted lines are explicit criteria of the kind that improves precision? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Report an issue only when you are at least 90% confident that it is a real problem in this code."
+      },
+      {
+        "key": "B",
+        "text": "Report a floating promise only if it is not awaited, returned, or given a .catch() handler."
+      },
+      {
+        "key": "C",
+        "text": "Be conservative: developers are busy, so report only the issues that truly matter for this change."
+      },
+      {
+        "key": "D",
+        "text": "Report only the findings that a senior engineer on this team would consider important to fix."
+      },
+      {
+        "key": "E",
+        "text": "Do not report formatting, import order, or naming; the linter already enforces them in CI."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Каждая строка оценивается отдельно: подходит та, что задаёт категорию кода, а не степень уверенности или важности. B описывает, когда репортить, через проверяемую конструкцию (promise не awaited, не возвращён и без обработчика .catch()), а E явно задаёт, что пропускать (стиль, который уже проверяет линтер). A, C и D опираются на суждение модели о собственной уверенности или важности, а такие формулировки не повышают precision по сравнению с категориальными критериями.",
+    "why_wrong_ru": {
+      "A": "Порог самооценки уверенности не откалиброван и не говорит, какие находки вообще считать проблемой.",
+      "C": "«Be conservative» и «truly matter» это расплывчатые указания, которые гайд прямо называет неэффективными.",
+      "D": "Критерий «что посчитал бы важным senior» оставляет решение на усмотрение модели и не задаёт категорию."
+    },
+    "takeaway_ru": "Хороший критерий называет конструкцию кода для report или skip, а не уровень уверенности.",
+    "signal_ru": "Проверяемая конструкция («not awaited, returned, or given a .catch()») или явный skip-список → критерий; слова «confident», «conservative», «important» → расплывчатое суждение."
+  },
+  {
+    "id": "f-criteria-05",
+    "domain": 4,
+    "task": "4.1",
+    "scenario": 6,
+    "focus": "Явные критерии в промптах",
+    "targets": [
+      "d4-01"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your invoice extraction pipeline asks Claude to set `needs_review: true` for \"any invoice that looks suspicious or unusual.\" Reviewers now receive 41% of all invoices, and 9 of 10 flagged ones are fine: unfamiliar vendors, handwritten notes, or rare currencies. Last quarter's confirmed problems fall into three types: line items that don't sum to the total, a missing vendor tax ID, and a due date before the issue date. What is the most effective change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add a confidence score to each extraction and set needs_review only when the score falls below 0.6."
+      },
+      {
+        "key": "B",
+        "text": "Reword the instruction to \"flag only invoices that are clearly suspicious; be conservative about flagging.\""
+      },
+      {
+        "key": "C",
+        "text": "Flag an invoice only when two of three independent extraction runs both set needs_review to true."
+      },
+      {
+        "key": "D",
+        "text": "Set needs_review only for a sum mismatch, a missing tax ID, or a due date before the issue date."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Формулировка «looks suspicious or unusual» не задаёт, что считать проблемой, поэтому модель флагует всё непривычное: новых поставщиков, рукописные пометки, редкие валюты. Явные категориальные критерии, построенные на подтверждённых типах проблем, напрямую повышают precision флага. Порог уверенности или консенсус прогонов не меняют того, что модель считает «подозрительным», и непривычные, но корректные счета продолжат уходить ревьюерам.",
+    "why_wrong_ru": {
+      "A": "Уверенность извлечения не связана с подозрительностью счёта, а неоткалиброванный порог не задаёт критерия.",
+      "B": "Это та же расплывчатая инструкция с «be conservative», такие формулировки не повышают precision.",
+      "C": "Прогоны с тем же расплывчатым критерием стабильно флагуют одно и то же непривычное, консенсус это не отфильтрует."
+    },
+    "takeaway_ru": "Флаг для ревью задавай перечнем подтверждённых категорий проблем, а не словом «подозрительно».",
+    "signal_ru": "«9 of 10 flagged ones are fine» и три подтверждённых типа проблем → заменить «suspicious» явными категориями; порог уверенности не определяет, что считать проблемой."
+  },
+  {
+    "id": "f-examples-01",
+    "domain": 4,
+    "task": "4.2",
+    "scenario": 6,
+    "focus": "Примеры и итерации",
+    "targets": [
+      "d4-03"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your listing extractor returns a nullable `floor_area_sqm`. To cut nulls, you added three few-shot examples, all taken from the agency's standard template, where the area sits in a spec table. Nulls stayed at 19%. An audit shows that most null listings do state the area, but only in the narrative (\"a bright 72 m² flat\") or in a floor-plan caption; about 3% of listings genuinely omit it. How should you change the examples?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Use 3–4 examples covering spec-table, narrative, and caption layouts, plus one listing that returns null."
+      },
+      {
+        "key": "B",
+        "text": "Add ten more examples from the agency's standard template so the model sees the area pattern many more times."
+      },
+      {
+        "key": "C",
+        "text": "Replace the examples with a prose list of every phrasing, unit spelling, and section name agencies use."
+      },
+      {
+        "key": "D",
+        "text": "Keep the examples and mark floor_area_sqm as required so the model has to locate a value every time."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Few-shot примеры работают, когда показывают именно те варианты структуры, на которых модель ошибается: здесь это площадь в тексте описания и в подписи к плану. Примеры только из стандартного шаблона учат одному формату, поэтому null на других форматах сохраняется. Пример с честным null нужен для 3% объявлений без площади, иначе модель начнёт выдумывать значение. В отличие от required-поля, такой набор учит находить существующие данные, не заставляя заполнять отсутствующие.",
+    "why_wrong_ru": {
+      "B": "Больше примеров того же шаблона не показывают новые форматы, на которых и возникают null.",
+      "C": "Перечень формулировок это снова проза, которая не обобщается на новые варианты так, как примеры.",
+      "D": "Required-поле заставит модель выдумывать площадь в тех 3% объявлений, где её действительно нет."
+    },
+    "takeaway_ru": "Few-shot должен покрывать форматы, на которых модель ошибается, плюс пример с честным null.",
+    "signal_ru": "«all taken from the standard template» и null на narrative и caption → примеры должны покрыть эти форматы; «genuinely omit it» → нужен пример с null, а не required."
+  },
+  {
+    "id": "f-examples-02",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 2,
+    "focus": "Примеры и итерации",
+    "targets": [
+      "d3-10"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your team lead reviews how five developers iterated with Claude Code last sprint and wants to share the patterns that worked in the team wiki for new hires. Each option below describes one developer's situation and the iteration technique that developer chose. Which TWO technique choices fit the situation described? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Ana: Claude formats phone numbers differently each time from her careful prose spec; she rewrites it as numbered rules."
+      },
+      {
+        "key": "B",
+        "text": "Ben: his decimal-rounding fix changes the totals that the checksum step verifies; he sends each bug in a separate message."
+      },
+      {
+        "key": "C",
+        "text": "Chen: a date-range parser with 15 known edge cases and a 2 ms budget; he writes the tests first and shares each failure."
+      },
+      {
+        "key": "D",
+        "text": "Dana: a cache for a service whose invalidation rules she does not know; she asks Claude to handle all edge cases robustly."
+      },
+      {
+        "key": "E",
+        "text": "Eli: Claude maps CSV columns inconsistently from his prose description; he sends three sample rows with the exact output."
+      }
+    ],
+    "answer": [
+      "C",
+      "E"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно по тому, совпадает ли техника с ситуацией. C: много известных граничных случаев и требование к производительности это случай для test-driven iteration, где тесты пишут до реализации и итерируют по падениям. E: проза понимается непоследовательно, и 2–3 конкретные пары вход/выход точнее всего задают преобразование. Ане нужна та же техника, что у Eli, у Бена баги взаимосвязаны и идут одним сообщением, а Дане стоит начать с interview pattern.",
+    "why_wrong_ru": {
+      "A": "Переписанная в правила проза остаётся прозой; при непоследовательном понимании нужны 2–3 пары вход/выход.",
+      "B": "Исправление округления меняет данные для checksum, это взаимосвязанные проблемы, их описывают в одном сообщении.",
+      "D": "В незнакомой области сначала нужен interview pattern, а просьба «handle all edge cases» ничего не уточняет."
+    },
+    "takeaway_ru": "Проза путается → пары вход/выход; много edge cases → тесты первыми; незнакомая область → интервью.",
+    "signal_ru": "«15 known edge cases» и «2 ms» → тесты первыми; «maps CSV columns inconsistently» → вход/выход; «changes the totals» → одно сообщение; «does not know» → интервью."
+  },
+  {
+    "id": "f-examples-03",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 2,
+    "focus": "Примеры и итерации",
+    "targets": [
+      "d3-10"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "You are using Claude Code to fix `calculate_totals()` in an invoicing service. You first reported that discounts were applied after tax; Claude fixed it, and the per-line rounding test began failing. You then reported the rounding; Claude fixed it, and the discount test failed again. After four messages the two fixes keep undoing each other, because the discount base depends on how line totals are rounded. What should your next message do?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Report one issue per message as before, but add \"do not break the previous fix\" to every new request."
+      },
+      {
+        "key": "B",
+        "text": "Describe both requirements in one message, with two sample invoices and the exact totals expected."
+      },
+      {
+        "key": "C",
+        "text": "Ask Claude to make calculate_totals() robust to every discount and rounding edge case it can think of."
+      },
+      {
+        "key": "D",
+        "text": "Start a fresh session and send the two issues again as separate messages, but this time in reverse order."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Исправления взаимодействуют: база скидки зависит от округления строк, поэтому последовательные итерации чинят одно и ломают другое. Взаимосвязанные проблемы описывают в одном подробном сообщении, а конкретные примеры счетов с точными ожидаемыми суммами задают поведение однозначно. Последовательная итерация подходит только для независимых проблем.",
+    "why_wrong_ru": {
+      "A": "Просьба «не ломай прошлый фикс» не сообщает модели, как совместить оба требования, и цикл продолжится.",
+      "C": "Расплывчатое «robust to every edge case» не задаёт ожидаемых сумм и не разрешает конфликт двух правил.",
+      "D": "Новая сессия и обратный порядок сохраняют раздельные итерации, из-за которых фиксы и отменяют друг друга."
+    },
+    "takeaway_ru": "Фиксы отменяют друг друга → оба требования в одно сообщение с примерами ожидаемого результата.",
+    "signal_ru": "«keep undoing each other» и «the discount base depends on how line totals are rounded» → проблемы взаимосвязаны: одно сообщение с примерами, а не раздельные итерации."
+  },
+  {
+    "id": "f-examples-04",
+    "domain": 4,
+    "task": "4.2",
+    "scenario": 3,
+    "focus": "Примеры и итерации",
+    "targets": [
+      "d4-03"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your document analysis subagent labels each source with `source_type`: peer_reviewed, preprint, grey_literature, or other. The prompt includes the team's policy: a preprint later published in a journal counts as peer_reviewed, conference abstracts are grey_literature, and government reports are grey_literature even if externally reviewed. On a test set, clear-cut sources are labeled correctly, but these three borderline kinds are labeled inconsistently across runs, with 30% disagreement. What is the most effective fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add \"unclear\" to the enum and assign it to these borderline sources so the synthesis agent can weigh them."
+      },
+      {
+        "key": "B",
+        "text": "Add fifteen examples of clear-cut journal articles and blog posts so that the category boundaries are well defined."
+      },
+      {
+        "key": "C",
+        "text": "Rewrite the policy paragraph as a detailed decision tree that covers every publication venue the team knows."
+      },
+      {
+        "key": "D",
+        "text": "Add three examples of these borderline sources, each explaining why the policy picks one label over another."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Политика уже определяет правильный ответ, но модель применяет её непоследовательно именно на пограничных случаях. Гайд рекомендует 2–4 целевых few-shot примера для неоднозначных сценариев, которые показывают рассуждение, почему выбран один вариант, а не правдоподобная альтернатива; так модель обобщает суждение на похожие источники. Значение «unclear» нужно для действительно неоднозначных документов, а здесь у команды есть однозначное правило.",
+    "why_wrong_ru": {
+      "A": "«Unclear» для случаев с известным правилом теряет информацию и перекладывает решение на синтез.",
+      "B": "Очевидные источники модель и так размечает верно, ошибки возникают только на пограничных.",
+      "C": "Ещё больше прозы не помогает, когда подробная политика уже есть, а дерево по всем площадкам не обобщается."
+    },
+    "takeaway_ru": "Правило есть, но применяется непоследовательно → 2–4 примера пограничных случаев с рассуждением.",
+    "signal_ru": "«clear-cut sources are labeled correctly» и политика уже задаёт ответ → few-shot с рассуждением на пограничных случаях, а не «unclear»."
+  },
+  {
+    "id": "f-examples-05",
+    "domain": 4,
+    "task": "4.2",
+    "scenario": 6,
+    "focus": "Примеры и итерации",
+    "targets": [
+      "d4-03"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your spec-sheet extractor has two field problems. `model_number` is optional and nullable, and it comes back null on 18% of sheets; on review, nearly all of those sheets print it, but in a footer table or in the title line rather than in the spec table. `warranty_months` is a required integer, and on sheets with no warranty section at all it still contains values like 12 or 24. Which TWO changes fix these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add few-shot examples that extract model_number from footer tables and title lines, not only spec tables."
+      },
+      {
+        "key": "B",
+        "text": "Make model_number required so that the model can no longer return null for it on any of the spec sheets."
+      },
+      {
+        "key": "C",
+        "text": "Retry every sheet that returns a null model_number, appending \"model_number must not be empty.\""
+      },
+      {
+        "key": "D",
+        "text": "Make warranty_months optional and nullable so the model can return null when no warranty section exists."
+      },
+      {
+        "key": "E",
+        "text": "Default warranty_months to 0 whenever the model reports low confidence in its extracted warranty value."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно, и подпроблемы разные по природе. Для model_number данные в документе есть, но модель не находит их в непривычной структуре, поэтому нужны few-shot примеры с этими форматами (A). Для warranty_months данных нет, а required-поле заставляет модель выдумывать правдоподобное значение, поэтому поле делают optional и nullable (D). Главная граница: null при наличии данных лечат примерами, выдуманные значения при отсутствии данных лечат nullable-полем.",
+    "why_wrong_ru": {
+      "B": "Required-поле не учит находить номер в футере и начнёт порождать выдуманные значения.",
+      "C": "Повтор с общей фразой не показывает, где искать номер, и давит на модель заполнить поле любой ценой.",
+      "E": "Значение по умолчанию 0 это выдуманные данные, неотличимые от реальной гарантии в 0 месяцев."
+    },
+    "takeaway_ru": "Данные есть, но null → few-shot с этими форматами; данных нет → nullable-поле.",
+    "signal_ru": "«nearly all of those sheets print it» → данные есть, нужны примеры; «no warranty section at all» при required → выдумывание, нужно nullable."
+  },
+  {
+    "id": "f-schemas-01",
+    "domain": 2,
+    "task": "2.3",
+    "scenario": 1,
+    "focus": "Схемы и структурированный вывод",
+    "targets": [
+      "d4-05"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "After the support agent once answered an order question without calling `lookup_order`, a teammate set `tool_choice: \"any\"` on every request in the agent loop. Since then the agent never asks a clarifying question or gives a final answer in text: when nothing needs looking up, it calls `get_customer` again or `escalate_to_human`, and conversations end only at the 25-iteration safety cap. Escalations have tripled. What should you change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep \"any\" on every request and add \"reply in plain text when no tool is needed\" to the system prompt."
+      },
+      {
+        "key": "B",
+        "text": "Force {\"type\": \"tool\", \"name\": \"lookup_order\"} on every request so that order data is always fetched."
+      },
+      {
+        "key": "C",
+        "text": "Return to tool_choice \"auto\" so the model can reply in text; fix the skipped lookup via tool descriptions."
+      },
+      {
+        "key": "D",
+        "text": "Keep \"any\" on every request and lower the safety cap to 10 iterations so that stuck conversations end sooner."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "При `tool_choice: \"any\"` модель обязана вызвать какой-то инструмент в каждом ответе, поэтому в цикле агента она не может задать уточняющий вопрос или дать финальный текстовый ответ. Разговорному агенту нужен `\"auto\"`: модель сама решает, вызвать инструмент или ответить текстом. Единичный пропуск `lookup_order` лечат описаниями инструментов или промптом, а не настройкой, которая запрещает текст.",
+    "why_wrong_ru": {
+      "A": "Инструкция в промпте не отменяет \"any\": API всё равно требует вызов инструмента в каждом ответе.",
+      "B": "Forced lookup_order на каждом запросе тоже запрещает текстовые ответы и вызывает поиск заказа даже без заказа.",
+      "D": "Меньший лимит итераций просто раньше обрывает диалоги, а агент по-прежнему не может ответить клиенту."
+    },
+    "takeaway_ru": "Агенту, который должен иногда отвечать текстом, нужен \"auto\"; \"any\" запрещает текстовый ответ.",
+    "signal_ru": "«never asks a clarifying question or gives a final answer in text» → \"any\" запрещает текст; разговорному циклу нужен \"auto\", а не forced lookup_order."
+  },
+  {
+    "id": "f-schemas-02",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 3,
+    "focus": "Схемы и структурированный вывод",
+    "targets": [
+      "d4-05"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your document analysis subagent has two tools: `record_findings` (claim, evidence excerpt, source, date) and `report_no_relevant_content` (reason). It runs with `tool_choice: \"auto\"`, and in 7% of calls it returns a prose summary instead of calling a tool, which the coordinator cannot merge. A teammate proposes forcing `record_findings` on every call. Whether a source is relevant becomes clear only after the subagent reads it. Which configuration should you use?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Set tool_choice \"any\", so every call ends in one of the two tools, chosen by the source content."
+      },
+      {
+        "key": "B",
+        "text": "Force record_findings on every call and then drop any returned finding whose evidence excerpt is empty."
+      },
+      {
+        "key": "C",
+        "text": "Keep tool_choice \"auto\" and add a parser that converts the prose summaries into the findings format."
+      },
+      {
+        "key": "D",
+        "text": "Keep tool_choice \"auto\" and add \"always respond by calling one of your tools\" to the system prompt."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "`\"any\"` гарантирует вызов инструмента, то есть структурированный результат, но оставляет модели выбор, какой именно, а выбор здесь зависит от содержимого источника. Forced `record_findings` убрал бы прозу, но заставил бы модель оформлять находки даже из нерелевантных источников, и она начала бы их выдумывать. `\"auto\"` с инструкцией остаётся вероятностным: модель по-прежнему вправе ответить текстом.",
+    "why_wrong_ru": {
+      "B": "Forced-вызов загоняет нерелевантные источники в схему находок и провоцирует выдуманные claim и evidence.",
+      "C": "Парсер прозы возвращает хрупкий неструктурированный путь, который tool use как раз должен был убрать.",
+      "D": "При \"auto\" модель вправе ответить текстом, и инструкция в промпте этого не гарантирует."
+    },
+    "takeaway_ru": "Нужен любой из нескольких инструментов, а выбор зависит от входа → tool_choice \"any\".",
+    "signal_ru": "«two tools» и «becomes clear only after the subagent reads it» → выбор инструмента зависит от входа, значит \"any\", а не forced record_findings."
+  },
+  {
+    "id": "f-schemas-03",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 6,
+    "focus": "Схемы и структурированный вывод",
+    "targets": [
+      "d4-05"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your extraction service receives documents from three supplier portals, one portal per document type, so each document's type is known with certainty before extraction. The request code, copied from the mixed-mailbox pipeline, sends all three tools (`extract_invoice`, `extract_receipt`, `extract_credit_note`) with `tool_choice: \"any\"`. On 5% of invoices titled \"Payment receipt,\" the model calls `extract_receipt`, and the due dates and PO numbers are lost. Which configuration fixes this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep \"any\" and add a system prompt line naming the portal's document type and the tool it requires for it."
+      },
+      {
+        "key": "B",
+        "text": "Force the tool matching the portal's type on each request: {\"type\": \"tool\", \"name\": \"extract_invoice\"}."
+      },
+      {
+        "key": "C",
+        "text": "Switch to \"auto\" so the model can explain in text when a title conflicts with the portal's document type."
+      },
+      {
+        "key": "D",
+        "text": "Merge the three tools into one extract_document schema with every field optional, so any choice works."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Тип каждого документа известен заранее, значит известен и нужный инструмент, а forced-выбор `{\"type\": \"tool\", \"name\": ...}` обязывает модель вызвать именно его. `\"any\"` гарантирует только вызов какого-то инструмента и оставляет выбор модели, поэтому заголовок «Payment receipt» сбивает её на чужую схему. Это обратная сторона случая с неизвестным типом документа: там правильный ответ `\"any\"`, а здесь выбор модели только добавляет ошибку.",
+    "why_wrong_ru": {
+      "A": "Инструкция в промпте вероятностна, а \"any\" по-прежнему позволяет модели выбрать любой из трёх инструментов.",
+      "C": "При \"auto\" модель может вообще не вызвать инструмент, и сервис теряет гарантию структурированного вывода.",
+      "D": "Общая схема со всеми необязательными полями теряет обязательные поля каждого типа и не мешает спутать тип."
+    },
+    "takeaway_ru": "Тип документа заранее известен → forced-выбор нужного инструмента; неизвестен → \"any\".",
+    "signal_ru": "«known with certainty before extraction» → нужный инструмент известен заранее, значит forced-выбор; \"any\" подходит, только когда тип неизвестен."
+  },
+  {
+    "id": "f-schemas-04",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 6,
+    "focus": "Схемы и структурированный вывод",
+    "targets": [
+      "d4-05"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "You are setting `tool_choice` for two call sites in your extraction platform. Site 1 is a reviewer assistant in the review UI: reviewers ask free-form questions about an extraction, and the assistant may call `get_source_page` when it needs the original page, or answer directly. Site 2 is mail intake: every incoming email must be filed through exactly one of `file_claim`, `file_complaint`, or `file_inquiry`, each with its own schema, and a text reply stalls the queue. Which TWO settings are correct? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Site 1: \"any\", so that every answer the assistant gives is grounded in a freshly fetched source page."
+      },
+      {
+        "key": "B",
+        "text": "Site 1: \"auto\", so the assistant fetches a source page only when needed and otherwise answers in text."
+      },
+      {
+        "key": "C",
+        "text": "Site 2: force file_inquiry, because inquiries are 60% of the volume and staff can refile the rest later."
+      },
+      {
+        "key": "D",
+        "text": "Site 2: \"auto\", so the model can describe in plain text the emails that fit none of the three schemas."
+      },
+      {
+        "key": "E",
+        "text": "Site 2: \"any\", so the model must call one of the filing tools and picks the one that fits the email."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно. Site 1 это разговорный помощник, которому нужен текстовый ответ, а инструмент нужен лишь иногда, поэтому подходит \"auto\" (B); при \"any\" он обязан вызывать инструмент и не может просто ответить. Site 2 всегда должен вернуть структурированный результат, но какой инструмент нужен, зависит от содержания письма, поэтому нужен \"any\" (E): вызов обязателен, а выбор за моделью. Forced-выбор одного инструмента заносит жалобы и претензии в чужую схему.",
+    "why_wrong_ru": {
+      "A": "При \"any\" помощник обязан вызывать инструмент в каждом ответе и не может ответить ревьюеру текстом.",
+      "C": "Forced file_inquiry заносит претензии и жалобы в схему запроса, а их поля теряются.",
+      "D": "При \"auto\" модель может ответить текстом вместо вызова, и очередь снова останавливается."
+    },
+    "takeaway_ru": "Текст иногда нужен → \"auto\"; вызов обязателен, схема неизвестна → \"any\"; конкретный шаг → forced.",
+    "signal_ru": "«or answer directly» → помощнику нужен \"auto\"; «must be filed through exactly one of» и «text reply stalls» → \"any\", а не forced file_inquiry."
+  },
+  {
+    "id": "f-schemas-05",
+    "domain": 4,
+    "task": "4.4",
+    "scenario": 6,
+    "focus": "Схемы и структурированный вывод",
+    "targets": [
+      "d4-07"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your Pydantic validator checks that extracted `line_items` sum to `stated_total`; 5% of invoices fail and go to manual entry. In a sample of 60 failures, 52 are multi-page invoices whose line-item table continues on the next page under a \"continued\" heading. The extraction stopped at the page break, although the missing items are in the document you sent. What should you do with these failures?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep sending them to manual entry, since a retry cannot recover values that are missing from the extraction."
+      },
+      {
+        "key": "B",
+        "text": "Resend the original extraction prompt unchanged up to three times, since results vary slightly between runs."
+      },
+      {
+        "key": "C",
+        "text": "Drop the sum check, because tool use with a strict schema already guarantees that the extraction is valid."
+      },
+      {
+        "key": "D",
+        "text": "Retry with the document, the failed output, and the exact error (sum below total; see continued table)."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Недостающие позиции есть в отправленном документе, модель просто остановилась на разрыве страницы, а это структурная ошибка, которую retry-with-error-feedback исправляет хорошо. Повторный запрос включает исходный документ, неудачное извлечение и конкретную ошибку валидации, указывающую, где искать. Граница: retry бесполезен, только когда информации нет во входных данных, а здесь она есть.",
+    "why_wrong_ru": {
+      "A": "Ограничение retry касается данных, отсутствующих в источнике, а здесь позиции есть в документе, просто не извлечены.",
+      "B": "Неизменённый промпт не сообщает модели, что не так, и она снова остановится на разрыве страницы.",
+      "C": "Строгая схема исключает синтаксические ошибки, но не семантические, такие как несходящаяся сумма."
+    },
+    "takeaway_ru": "Данные есть в документе, но извлечены неверно → retry с документом, выводом и конкретной ошибкой.",
+    "signal_ru": "«the missing items are in the document you sent» → информация есть, retry с ошибкой поможет; это не случай отсутствующего источника."
+  },
+  {
+    "id": "f-schemas-06",
+    "domain": 4,
+    "task": "4.4",
+    "scenario": 6,
+    "focus": "Схемы и структурированный вывод",
+    "targets": [
+      "d4-07"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your claims extractor requires `diagnosis_codes` to contain at least one code. On validation failure it retries with the document, the failed output, and the specific error, which fixes most format errors. Yet 3% of claims fail all three retries. Every one of them is a faxed claim whose footer reads \"Page 2 of 3\"; diagnosis codes belong in section 4 on page 3, which was never received. What should you do?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add few-shot examples that show diagnosis codes being found in different sections of the claim form."
+      },
+      {
+        "key": "B",
+        "text": "Raise the retry limit to five and quote the section 4 heading in the error message that the retry sends."
+      },
+      {
+        "key": "C",
+        "text": "Stop retrying them; allow null codes with a missing_pages flag and route each claim to request page 3."
+      },
+      {
+        "key": "D",
+        "text": "Keep the field required and tell the model to infer the likely codes from the procedure descriptions."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Коды находятся на третьей странице, которой нет во входных данных, поэтому ни повтор с обратной связью, ни примеры не помогут: информации просто нет в источнике. Такое поле делают допускающим null, помечают причину (missing_pages) и отправляют запрос недостающей страницы или ревью вместо траты попыток. Few-shot помогает, когда данные есть, но в непривычной структуре, а здесь их нет совсем.",
+    "why_wrong_ru": {
+      "A": "Few-shot учит находить данные в другой структуре, но кодов на полученных страницах просто нет.",
+      "B": "Больше попыток с подсказкой не создадут страницу, которая не пришла, а лишь потратят запросы.",
+      "D": "Вывод кодов из описаний процедур это выдумывание данных в медицинском документе."
+    },
+    "takeaway_ru": "Информации нет во входе → retry бесполезен: null, флаг причины и запрос недостающего источника.",
+    "signal_ru": "«Page 2 of 3» и «never received» → данных нет во входе, retry и few-shot не помогут; противоположность случаю, где данные есть, но не извлечены."
+  },
+  {
+    "id": "f-schemas-07",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 6,
+    "focus": "Схемы и структурированный вывод",
+    "targets": [
+      "d4-06"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "After moving invoice extraction to tool use with a strict schema, parse errors fell to zero and the team removed its post-checks. A finance audit then found two problems. On 2% of invoices the header's due date differs from the date in the payment-terms section, and the extraction silently keeps one of them. Invoices that clearly state \"virtual card\" or \"direct debit\" are forced into `card` or `ach`, because `payment_method` is an enum of card, ach, wire, and check. Which TWO changes address these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Extract both stated due dates with their locations and set conflict_detected when they differ, for review."
+      },
+      {
+        "key": "B",
+        "text": "Force the extraction tool with tool_choice, so the strict schema guarantees correct dates and field values too."
+      },
+      {
+        "key": "C",
+        "text": "Add \"other\" to payment_method plus a payment_method_detail string that holds the method as stated."
+      },
+      {
+        "key": "D",
+        "text": "Add \"unclear\" to payment_method and use it whenever the stated method is not one of the four values."
+      },
+      {
+        "key": "E",
+        "text": "Mark every field as required and keep strict mode on so that values cannot land in the wrong field."
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно. Подпроблема 1: строгая схема устраняет синтаксические ошибки, но не семантические, а противоречие внутри самого документа она не замечает; поэтому извлекают обе даты с их местом в документе и выставляют conflict_detected для ревью (A). Подпроблема 2: закрытый enum втискивает новые, но явно указанные способы оплаты в чужие значения, и паттерн \"other\" плюс поле-детализация делает категорию расширяемой (C). Значение \"unclear\" предназначено для действительно неоднозначных документов, а здесь способ оплаты указан прямо.",
+    "why_wrong_ru": {
+      "B": "Forced tool_choice гарантирует вызов инструмента и синтаксис, но не правильность дат и значений.",
+      "D": "Способ оплаты указан явно, и \"unclear\" скрыл бы известное значение вместо того, чтобы его сохранить.",
+      "E": "Required и strict mode касаются структуры, а не смысла, а required ещё и провоцирует выдуманные значения."
+    },
+    "takeaway_ru": "Схема чинит синтаксис, не смысл: противоречия в источнике помечай conflict_detected; новые категории → \"other\" + detail.",
+    "signal_ru": "«parse errors fell to zero», но даты в документе расходятся → семантика, нужен conflict_detected; «clearly state» новый способ → \"other\" + detail, а не \"unclear\"."
+  },
+  {
+    "id": "f-schemas-08",
+    "domain": 4,
+    "task": "4.4",
+    "scenario": 5,
+    "focus": "Схемы и структурированный вывод",
+    "targets": [
+      "d4-07"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI reviewer runs `claude -p` with `--json-schema`, and each finding has `file`, `line`, `severity`, and `message`. Developers dismiss 34% of findings, and you want to know which code constructs drive the dismissals so you can rewrite the review criteria. Grouping by `message` fails because the model words the same kind of issue differently each time. What should you add?",
+    "options": [
+      {
+        "key": "A",
+        "text": "A confidence field on every finding, hiding findings below 0.7 until the dismissal rate falls under 15%."
+      },
+      {
+        "key": "B",
+        "text": "A detected_pattern field naming the code construct behind each finding, then aggregate dismissals by it."
+      },
+      {
+        "key": "C",
+        "text": "A free-text reasoning field, so that reviewers can read why each dismissed finding was raised at all."
+      },
+      {
+        "key": "D",
+        "text": "A weekly script that clusters dismissed findings by the similarity of their message text and line ranges."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Чтобы системно анализировать отклонённые находки, в структурированный вывод добавляют поле detected_pattern с названием конструкции кода, которая вызвала находку. По этому полю отклонения агрегируются, и видно, какие паттерны дают ложные срабатывания и какие критерии переписать. Свободный текст и кластеризация формулировок не дают стабильного ключа для группировки, а порог уверенности скрывает находки, не объясняя причину.",
+    "why_wrong_ru": {
+      "A": "Порог самооценки уверенности прячет находки, но не показывает, какие конструкции дают ложные срабатывания.",
+      "C": "Свободный текст удобно читать по одной находке, но по нему нельзя надёжно агрегировать отклонения.",
+      "D": "Кластеризация разных формулировок ненадёжна, это та же проблема, из-за которой не сработала группировка по message."
+    },
+    "takeaway_ru": "Чтобы анализировать отклонения находок, добавь в схему detected_pattern и агрегируй по нему.",
+    "signal_ru": "«which code constructs drive the dismissals» и неудачная группировка по message → нужен структурированный ключ detected_pattern, а не порог уверенности."
+  }
+]

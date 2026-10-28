@@ -1,0 +1,569 @@
+[
+  {
+    "id": "g-multiagent-01",
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "focus": "Координатор и сабагенты",
+    "targets": [
+      "s1-05"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "To cut coordinator overhead, your team piloted a shared file, findings.json: the coordinator spawns all subagents once, each subagent appends its results to the file, and the synthesis subagent starts once the search entries stop changing. In one pilot run, a web search subagent hit a rate limit and wrote an entry with two of its eight planned sources, and synthesis presented that subtopic as well supported. The coordinator's trace shows only 'all subagents finished,' and nobody retried the subtopic. What should you change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add file locking and a strict JSON schema to findings.json, so that concurrent appends cannot corrupt entries or drop fields."
+      },
+      {
+        "key": "B",
+        "text": "Instruct the synthesis subagent to skip any findings.json entry with fewer sources than planned and to flag that subtopic itself."
+      },
+      {
+        "key": "C",
+        "text": "Have subagents return results to the coordinator, which checks each one, re-delegates failures, and briefs synthesis."
+      },
+      {
+        "key": "D",
+        "text": "Have each web search subagent retry rate-limited queries until all planned sources are found before it writes to the file."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Общий файл выключает координатора из потока данных: он не видит, что записал каждый субагент, поэтому некому заметить неполный результат, перезапустить подзадачу или пометить пробел. Guide (1.2) требует маршрутизировать всю коммуникацию субагентов через координатора ради наблюдаемости, единообразной обработки ошибок и контролируемого потока информации. Вариант B закрывает только один симптом: synthesis пропустит неполную запись, но подтему никто не дособерёт, а координатор так и останется слепым.",
+    "why_wrong_ru": {
+      "A": "Запись была корректной по формату, так что блокировки и схема ничего не меняют: координатор по-прежнему не видит и не обрабатывает результаты.",
+      "B": "Synthesis сам пометит пробел, но перезапустить поиск некому, и координатор всё так же не знает о сбое.",
+      "D": "Локальные повторы полезны для transient-ошибок, но повторять «пока не найдёшь всё» без отчёта координатору нельзя: при неудаче он снова ничего не узнает."
+    },
+    "takeaway_ru": "Общий файл или шина вместо координатора: сбоев никто не видит и подзадачу никто не перезапускает.",
+    "signal_ru": "«Trace shows only all subagents finished» и «nobody retried» → координатор выключен из потока. B прячет неполную запись, но не возвращает контроль координатору."
+  },
+  {
+    "id": "g-multiagent-02",
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "focus": "Координатор и сабагенты",
+    "targets": [
+      "s1-05"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "To save round trips, a platform engineer gave each web search subagent an analyze_pdf tool that invokes the document analysis subagent directly and folds its summary into the search result. Over 50 runs, 38% of PDFs were analyzed two or three times, because different search subagents found the same documents. When an analysis failed on a paywalled PDF, the search subagent silently dropped the source, and the coordinator's log has no record of the attempt. What is the best redesign?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Remove analyze_pdf; search subagents return PDFs to the coordinator, which dedupes them and delegates analysis itself."
+      },
+      {
+        "key": "B",
+        "text": "Give the search subagents a shared registry of PDF URLs already analyzed, so that each document is sent for analysis only once."
+      },
+      {
+        "key": "C",
+        "text": "Have the analysis subagent return a structured error to the calling search subagent whenever a document cannot be loaded."
+      },
+      {
+        "key": "D",
+        "text": "Let each search subagent analyze PDFs with its own tools instead of calling the analysis subagent, removing the extra hop."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Когда субагент сам вызывает другого субагента, координатор теряет контроль над потоком: он не может распределить документы без дублей и не видит сбоев, поэтому источник пропадает молча. Guide (1.2) требует вести всю коммуникацию субагентов через координатора: он видит каждый результат, единообразно обрабатывает ошибки и решает, кому что передать. B убирает только дубли, C доводит ошибку лишь до субагента поиска, а координатор по-прежнему ничего не знает.",
+    "why_wrong_ru": {
+      "B": "Реестр снимает дубли, но сбой анализа всё так же остаётся внутри субагента поиска и до координатора не доходит.",
+      "C": "Структурированная ошибка уходит вызывающему субагенту, а не координатору, который один может повторить, перенаправить или пометить пробел.",
+      "D": "Анализ документов в субагенте поиска размывает роли и не убирает ни дублей между субагентами, ни скрытых сбоев."
+    },
+    "takeaway_ru": "Субагент не поручает работу другому субагенту сам: результаты и ошибки идут через координатора.",
+    "signal_ru": "«Analyzed two or three times» и «coordinator's log has no record» → два симптома прямого вызова. Реестр или ошибка родителю лечат по одному, возврат через координатора оба."
+  },
+  {
+    "id": "g-multiagent-03",
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "focus": "Координатор и сабагенты",
+    "targets": [
+      "s1-05"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Research reports take about 14 minutes, and traces show around 60 coordinator handoffs per report. Your platform team proposes five changes to cut latency. Your rule is to accept only changes that keep every exchange between subagents routed through the coordinator, so it can observe each handoff, handle errors consistently, and control what each agent receives. Which TWO proposals should you reject? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Emit all four web search Task calls in one coordinator response, so the search subagents run in parallel instead of one per turn."
+      },
+      {
+        "key": "B",
+        "text": "Let the synthesis subagent invoke the web search subagent directly when it finds a gap, reporting to the coordinator at the end."
+      },
+      {
+        "key": "C",
+        "text": "Give the synthesis subagent a scoped verify_fact tool for simple date and number checks, sending deeper ones to the coordinator."
+      },
+      {
+        "key": "D",
+        "text": "Have subagents return compact structured findings with source URLs and dates, so the coordinator relays less text to synthesis."
+      },
+      {
+        "key": "E",
+        "text": "Publish search results to a message bus that analysis and synthesis subscribe to, and send the coordinator one completion event."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно: остаётся ли координатор единственным каналом между субагентами. B: synthesis сам поручает работу поиску, и координатор не видит этих запросов, их ошибок и результатов. E: шина передаёт данные от субагента к субагенту напрямую, а координатор получает только сигнал о завершении, поэтому не может ни проверить данные, ни обработать сбой, ни решить, кому что отдать. A, C и D ускоряют работу, не обходя координатора.",
+    "why_wrong_ru": {
+      "A": "Несколько Task-вызовов в одном ответе координатора это рекомендованный способ параллельности, весь поток остаётся у него.",
+      "C": "Узкий verify_fact это инструмент, а не канал к другому агенту, и сложные проверки по-прежнему идут через координатора (guide 2.3).",
+      "D": "Компактные структурированные находки уменьшают объём, но передаются всё так же через координатора."
+    },
+    "takeaway_ru": "Ускоряй параллельными вызовами и компактным форматом, но не каналами в обход координатора.",
+    "signal_ru": "«Invoke the web search subagent directly» и «coordinator gets one completion event» → обход координатора. Verify_fact это инструмент, а не связь между агентами."
+  },
+  {
+    "id": "g-multiagent-04",
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "focus": "Координатор и сабагенты",
+    "targets": [
+      "s1-03"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your coordinator ends the refinement loop as soon as the synthesis subagent rates its own report's coverage at 8/10 or higher. Most runs now stop after round 1 with a self-rating of 9. Reviewers who sampled 30 reports found that in 12 of them at least two subtopics rest on a single vendor blog post, and the reports never mention thin coverage. What change best fixes the stopping logic?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Raise the threshold to 9.5/10, so the loop continues until the synthesis subagent is nearly certain that the report is complete."
+      },
+      {
+        "key": "B",
+        "text": "Have a separate reviewer agent score each report's comprehensiveness from 1 to 10, and stop only when it gives 8 or more."
+      },
+      {
+        "key": "C",
+        "text": "Always run exactly three refinement rounds, so that every report receives the same depth of research regardless of topic."
+      },
+      {
+        "key": "D",
+        "text": "Stop once each subtopic has two independent sources meeting quality criteria; cap rounds at three and annotate gaps."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Самооценка покрытия не проверяемый критерий: модель уверенно ставит 9 даже отчёту, где подтема держится на одном блоге вендора. Guide (1.2) описывает цикл уточнения, который продолжается, пока покрытие не станет достаточным, а достаточность нужно задать проверяемо: независимые источники на каждую подтему плюс критерии качества, с жёстким лимитом раундов как страховкой и пометкой оставшихся пробелов. Оценка 1–10 от другого агента (B) остаётся той же субъективной цифрой и не считает источники.",
+    "why_wrong_ru": {
+      "A": "Более высокий порог той же самооценки не делает её откалиброванной: отчёт на одном блоге так же легко получит 9.6.",
+      "B": "Оценка «полноты» от другого агента остаётся субъективной цифрой и не проверяет то, что сломано, то есть число независимых источников.",
+      "C": "Фиксированное число раундов делает лимит основным правилом и всё равно не проверяет, хватает ли источников."
+    },
+    "takeaway_ru": "Цикл уточнения останавливает проверяемое покрытие, а не оценка «полноты»; лимит раундов только страховка.",
+    "signal_ru": "«Rates its own coverage» и «rest on a single vendor blog post» → нужен счётный критерий источников. Оценка другим агентом осталась бы той же цифрой."
+  },
+  {
+    "id": "g-multiagent-05",
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "focus": "Координатор и сабагенты",
+    "targets": [
+      "s1-03"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your coordinator's only stopping rule for the refinement loop is 'run at most three rounds.' Traces from 60 runs show two problems. On narrow topics, every subtopic already has three independent sources after round 1, yet rounds 2 and 3 still run and add about 12 minutes. On broad topics, round 3 ends with two or three subtopics still unsupported, and the final report reads as complete without mentioning them. Which change fixes both problems?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Lower the cap to one round for topics the coordinator judges narrow, and raise it to six rounds for topics it judges broad."
+      },
+      {
+        "key": "B",
+        "text": "Stop once every subtopic meets a source-and-quality criterion; keep the cap as a backstop and annotate any gaps left."
+      },
+      {
+        "key": "C",
+        "text": "Keep the three-round cap and have the report generation subagent add a standard note that coverage may be incomplete."
+      },
+      {
+        "key": "D",
+        "text": "Remove the cap and let the loop run until the synthesis subagent reports that no gaps remain, however many rounds it takes."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Лимит раундов как единственное правило тратит время там, где покрытие уже есть, и обрывает работу там, где его нет, никак этого не отмечая. Guide (1.2) описывает цикл уточнения до достаточного покрытия, а guide (1.1) называет лимит итераций в роли основного механизма остановки антипаттерном. Правильно: проверяемый критерий по подтемам, лимит как страховка, а если он сработал раньше, синтез того, что есть, с явной пометкой пробелов.",
+    "why_wrong_ru": {
+      "A": "Разные лимиты по оценке ширины темы остаются лимитом как основным правилом, и пробелы после последнего раунда по-прежнему не отмечаются.",
+      "C": "Одинаковая оговорка в каждом отчёте не называет пустые подтемы и не убирает лишние раунды.",
+      "D": "Без лимита и с остановкой по самоотчёту synthesis цикл может крутиться бесконечно или остановиться на ошибочной самооценке."
+    },
+    "takeaway_ru": "Останавливает критерий покрытия, лимит раундов только страховка, а оставшиеся пробелы помечаются в отчёте.",
+    "signal_ru": "Два симптома: лишние раунды при готовом покрытии и молчаливые пробелы после раунда 3. Оба закрывает только критерий плюс лимит-страховка с пометкой пробелов."
+  },
+  {
+    "id": "g-multiagent-06",
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "focus": "Координатор и сабагенты",
+    "targets": [
+      "s1-03",
+      "s1-04"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your coordinator stops the refinement loop when a round adds no new source URLs. For 'lithium supply chain risks,' synthesis flags after round 1 that there is no data on refining capacity in Indonesia. The coordinator re-invokes the web search subagent with 'Search again to fill the gaps.' Round 2 returns 11 URLs, all seen in round 1, so the loop stops and the report ships without mentioning the Indonesia gap. Which TWO changes should you make? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "On re-delegation, pass the specific gap, the round-1 queries, and the sources already found, asking for Indonesian refining data."
+      },
+      {
+        "key": "B",
+        "text": "Raise the web search subagent's maximum results per call to 40, so that each round is more likely to surface URLs not seen before."
+      },
+      {
+        "key": "C",
+        "text": "Replace the stopping rule with a fixed five rounds, so that a single unproductive round can no longer end the loop early."
+      },
+      {
+        "key": "D",
+        "text": "Stop when each subtopic meets a source-and-quality criterion, with a round cap as backstop and remaining gaps annotated."
+      },
+      {
+        "key": "E",
+        "text": "Have the synthesis subagent write the Indonesia section from its general knowledge whenever a round adds no new URLs."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно, в стеме две связанные поломки. A: субагент не помнит прошлый вызов, поэтому «поищи снова» дало те же запросы и те же URL; координатор должен явно передать конкретный пробел, прошлые запросы и найденные источники. D: правило «раунд без новых URL» меряет новизну, а не покрытие, поэтому цикл остановился с открытым пробелом; нужен проверяемый критерий по подтемам, лимит как страховка и пометка оставшихся пробелов. B, C и E не устраняют ни одну из причин.",
+    "why_wrong_ru": {
+      "B": "Больше результатов по тому же размытому запросу дают больше дублей, а не данные по Индонезии.",
+      "C": "Фиксированные пять раундов делают лимит основным правилом, а с размытым промптом все пять вернут те же источники.",
+      "E": "Раздел из общих знаний модели без источников подменяет исследование догадками и прячет пробел."
+    },
+    "takeaway_ru": "Повторный вызов: конкретный пробел, прошлые запросы, источники. Остановка: по покрытию, а не по новизне URL.",
+    "signal_ru": "«Search again» и «all seen in round 1» → размытый повторный вызов. «No new source URLs» и «without mentioning the gap» → правило остановки меряет новизну, а не покрытие."
+  },
+  {
+    "id": "g-multiagent-07",
+    "domain": 1,
+    "task": "1.3",
+    "scenario": 3,
+    "focus": "Координатор и сабагенты",
+    "targets": [
+      "s1-04"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "After round 1, synthesis reports that sample sizes and study designs are missing for three of the 18 studies the document analysis subagent covered. The coordinator re-invokes that subagent with 'Analyze the sources again more carefully, paying attention to methodology.' The subagent re-reads all 18 documents, takes 12 minutes, and returns summaries nearly identical to round 1, still without sample sizes for the three studies. What should the coordinator send instead?",
+    "options": [
+      {
+        "key": "A",
+        "text": "The same instruction with only the three studies attached, so that the re-analysis finishes in a fraction of the time."
+      },
+      {
+        "key": "B",
+        "text": "A pointer to the coordinator's conversation history, so the subagent can read the synthesis gap report and its earlier output."
+      },
+      {
+        "key": "C",
+        "text": "The three studies, their round-1 extractions, and the missing fields (sample size, design), asking it to fill only those."
+      },
+      {
+        "key": "D",
+        "text": "The same instruction for all 18 studies plus a higher max_tokens limit, so there is room to cover methodology for each."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Субагент не помнит своего прошлого вызова и не видит разговора координатора, поэтому «проанализируй ещё раз внимательнее» выполняет с нуля и повторяет прежний результат. Guide (1.3) требует передавать контекст явно в промпте: какие документы, что из них уже извлечено и каких именно полей не хватает. Вариант A сокращает время, но задача остаётся размытой, поэтому sample size по-прежнему не появится.",
+    "why_wrong_ru": {
+      "A": "Меньше документов ускоряет работу, но без названных полей субагент снова вернёт те же резюме.",
+      "B": "Субагент не наследует контекст координатора и не может читать его разговор, такого механизма нет.",
+      "D": "Больший max_tokens даёт место для текста, но не говорит, чего не хватает, и снова заставляет перечитывать все 18 документов."
+    },
+    "takeaway_ru": "Повторный вызов субагента: какие документы, что уже извлечено, каких полей не хватает.",
+    "signal_ru": "«Re-reads all 18» и «still without sample sizes» → два симптома размытого промпта. A лечит только время, оба лечит названный пробел с прошлыми извлечениями."
+  },
+  {
+    "id": "g-multiagent-08",
+    "domain": 1,
+    "task": "1.3",
+    "scenario": 3,
+    "focus": "Координатор и сабагенты",
+    "targets": [
+      "s1-04"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "In round 2 of a report on EU battery recycling, synthesis flags two gaps: no recycled-content targets after 2027, and no cost-per-tonne figures for lithium recovery. In round 1 the web search subagent ran six queries and returned 23 sources. You are reviewing five Task prompts drafted for the round-2 search subagent. Which TWO prompts give the subagent what it needs to close a gap? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "\"Round 1 left gaps in the report. Search the whole topic again and cover everything you missed last time, avoiding weak sources.\""
+      },
+      {
+        "key": "B",
+        "text": "\"Gap: EU recycled-content targets for 2028–2035. Round-1 queries and 4 relevant URLs attached; find legal texts not among them.\""
+      },
+      {
+        "key": "C",
+        "text": "\"Continue from where your previous run stopped, skip the sources you already returned, and focus on recycling targets and costs.\""
+      },
+      {
+        "key": "D",
+        "text": "\"Gap: lithium recovery cost per tonne. 'Lithium recycling cost' found only news; prior sources attached; seek industry studies.\""
+      },
+      {
+        "key": "E",
+        "text": "\"The report is thin. All 23 round-1 sources are attached below; find better and more authoritative sources on this topic.\""
+      }
+    ],
+    "answer": [
+      "B",
+      "D"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно по одному вопросу: что субагент узнает из промпта, ведь кроме промпта у него ничего нет. B и D называют конкретный пробел, передают прошлые запросы и найденные источники и говорят, какой тип источника искать, поэтому поиск пойдёт по новым запросам. E передаёт источники, но не говорит, чего не хватает, а C опирается на память о прошлом запуске, которой у субагента нет.",
+    "why_wrong_ru": {
+      "A": "«Поищи снова, что пропустил» для субагента пустая фраза: он не знает ни пробелов, ни своих прошлых запросов.",
+      "C": "Субагент не помнит прошлого запуска, поэтому «продолжи и пропусти уже найденное» ему не на что опереться.",
+      "E": "Источники без названного пробела не говорят, что искать, и субагент снова прочешет всю тему."
+    },
+    "takeaway_ru": "Промпт повторного поиска: конкретный пробел, прошлые запросы, найденные источники. Памяти у субагента нет.",
+    "signal_ru": "Пробелы в стеме конкретные. Подходит промпт, где пробел назван и приложены прошлые запросы и источники; «continue from where your previous run stopped» опирается на несуществующую память."
+  },
+  {
+    "id": "g-multiagent-09",
+    "domain": 1,
+    "task": "1.3",
+    "scenario": 4,
+    "focus": "Координатор и сабагенты",
+    "targets": [
+      "s1-04"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Before a migration, an engineer tells your productivity agent's coordinator: 'Ignore generated code under gen/, and assume Python 3.12.' The coordinator's plan assigns billing/ plus shared/ledger/ to one subagent and invoicing/ to another, but each Task prompt says only 'Map the billing flow' or 'Map the invoicing flow.' Traces show that 35% of findings concern files in gen/, several recommend Python 3.8 workarounds, and both subagents spend half their time mapping shared/ledger/. What should change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Write each subagent's assigned directories, the gen/ exclusion, and the Python 3.12 constraint into its Task prompt."
+      },
+      {
+        "key": "B",
+        "text": "Add the engineer's constraints to the coordinator's system prompt, which spawned subagents read before they start their tasks."
+      },
+      {
+        "key": "C",
+        "text": "Have the coordinator drop gen/ findings and outdated advice when it merges subagent results, before reporting to the engineer."
+      },
+      {
+        "key": "D",
+        "text": "Merge billing and invoicing into a single subagent, so that shared/ledger/ is mapped once instead of twice in parallel."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Субагент знает только то, что написано в его промпте Task: план координатора и слова инженера автоматически не передаются. Поэтому оба субагента разбирают shared/ledger/, анализируют gen/ и предлагают обходы для старого Python. Guide (1.3) требует явно передавать контекст в промпте, а guide (1.2) делить scope между субагентами без дублирования; назначенные каталоги и ограничения в каждом промпте закрывают все три симптома.",
+    "why_wrong_ru": {
+      "B": "Субагенты не наследуют system prompt и историю координатора: у каждого свой промпт из AgentDefinition плюс текст Task.",
+      "C": "Фильтр при сведении прячет треть впустую сделанной работы и не убирает дублирование по shared/ledger/.",
+      "D": "Слияние убирает только дубль по shared/ledger/, теряет параллельность и не передаёт ограничения про gen/ и Python 3.12."
+    },
+    "takeaway_ru": "Чего нет в промпте Task, субагент не знает: границы и ограничения передавай явно.",
+    "signal_ru": "«Plan assigns» при «each Task prompt says only Map the billing flow» → решения координатора не дошли до субагентов. System prompt координатора они тоже не видят."
+  },
+  {
+    "id": "g-tooldesc-01",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 4,
+    "focus": "Описание инструмента",
+    "targets": [
+      "s2-03"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your productivity agent uses an MCP tool, query_latency, described as 'Returns latency metrics for a service over a time range.' The server picks resolution by range: up to 24 hours returns per-minute p99 values, up to 30 days returns hourly averages of p99, and longer ranges return daily averages. Asked 'Did checkout p99 spike above 2 s last week?', the agent queries 7 days, sees a maximum of 1.3 s, and answers 'no spikes,' though per-minute data shows three spikes above 3 s. What should you change first?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add a system prompt rule that query_latency must always be called in 24-hour windows, so every answer uses per-minute data."
+      },
+      {
+        "key": "B",
+        "text": "Change the server to return per-minute p99 values for every range, so that the output no longer depends on the window."
+      },
+      {
+        "key": "C",
+        "text": "Add few-shot examples of past-week latency questions to the prompt, each showing the agent's query and its final answer."
+      },
+      {
+        "key": "D",
+        "text": "Describe the resolution each range returns: hourly averages hide short spikes, so spike checks need 24-hour windows."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Агент выбрал разумный диапазон, но не знает, что для 7 дней сервер отдаёт часовые средние, в которых короткие пики сглажены, поэтому принимает 1.3 s за реальный максимум. Guide (2.1) требует, чтобы описание инструмента называло входы, что именно возвращается и граничные случаи. Достаточно описать разрешение для каждого диапазона и способ проверить пики, тогда агент сам запросит окна по 24 часа, когда вопрос про пики.",
+    "why_wrong_ru": {
+      "A": "Жёсткое правило ломает вопросы о трендах за месяц: агенту придётся делать 30 вызовов там, где часовые данные подходят.",
+      "B": "Поминутные данные за любой период раздувают ответ и контекст, и это переделка сервера вместо дешёвого первого шага.",
+      "C": "Few-shot учит шаблону ответа, но не объясняет, что часовые средние скрывают пики; описание инструмента идёт первым."
+    },
+    "takeaway_ru": "Ответ инструмента зависит от входа: опиши в описании, что возвращает каждый вариант.",
+    "signal_ru": "Агент читает «hourly averages» как максимум, а описание молчит о разрешении. «First» исключает переделку сервера, правило на один путь ломает другие вопросы."
+  },
+  {
+    "id": "g-tooldesc-02",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 4,
+    "focus": "Описание инструмента",
+    "targets": [
+      "s2-03"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your productivity agent checks feature flags it finds in code with the MCP tool get_flag, described as 'Returns a feature flag's configuration.' To simplify onboarding, the flag service also creates any flag name it does not recognize, set to off in every environment. Last month the agent's lookups created 180 empty flags in production config, and engineers who asked about misspelled flag names were told those flags 'exist and are off.' What is the best fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Document in get_flag's description that unknown names create a new flag, so the agent can warn engineers about the side effect."
+      },
+      {
+        "key": "B",
+        "text": "Make get_flag read-only, returning 'not found' for unknown names, and move creation into a separate create_flag write tool."
+      },
+      {
+        "key": "C",
+        "text": "Add a system prompt rule that the agent may call get_flag only for names it has first confirmed with a list_flags call."
+      },
+      {
+        "key": "D",
+        "text": "Add a PostToolUse hook that deletes any flag created during a get_flag call, then passes the original result to the agent."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Имя get_flag обещает чтение, а инструмент пишет в production-конфиг, и агент, выбирая инструмент по имени и описанию, вызывает его для любой проверки. Guide (2.1) требует чётко разграничить назначение, входы и выходы инструментов; скрытую запись решают разделением: get_flag только читает и честно отвечает «not found», а создание уходит в отдельный инструмент, описанный как запись. Документирование побочного эффекта (A) оставляет запись внутри чтения: флаги будут создаваться при каждой проверке.",
+    "why_wrong_ru": {
+      "A": "Агент узнает о побочном эффекте, но проверить флаг без его создания всё равно не сможет, и мусорные флаги продолжат появляться.",
+      "C": "Правило в промпте выполняется вероятностно и добавляет лишние вызовы, а инструмент чтения по-прежнему умеет писать.",
+      "D": "Хук убирает созданный флаг, но агент всё равно получает ответ «exists and is off» и передаёт его инженеру."
+    },
+    "takeaway_ru": "Инструмент с именем на чтение не пишет: скрытую запись выноси в отдельный write-инструмент.",
+    "signal_ru": "Два симптома: мусорные флаги и «exist and are off» для опечаток. Хук лечит первый, описание ни один; оба лечит только read-only get_flag с «not found»."
+  },
+  {
+    "id": "g-tooldesc-03",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 4,
+    "focus": "Описание инструмента",
+    "targets": [
+      "s2-03"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "You are triaging tool-selection problems across your productivity agent's MCP servers. For each tool, decide whether the first fix is a better description (inputs, what each input returns, edge cases, when to use it versus similar tools) or a change to the tool interface itself, such as renaming or splitting it. Which TWO tools need an interface change rather than a better description? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "run_query takes one string that may be SQL, a dashboard URL, or a CSV path, runs a different pipeline for each, and treats SQL as a URL in 15% of calls."
+      },
+      {
+        "key": "B",
+        "text": "list_deploys accepts a service name or a release tag; a tag returns only the final deploy per region, so the agent reports that no rollback occurred."
+      },
+      {
+        "key": "C",
+        "text": "get_ticket returns a ticket's details, and when the ticket is older than 90 days it also archives it, removing it from the team's board."
+      },
+      {
+        "key": "D",
+        "text": "search_docs covers only pages edited in the last two years, and for older internal systems the agent reports that no documentation exists."
+      },
+      {
+        "key": "E",
+        "text": "find_service, described as 'Finds services,' returns owner teams and on-call rotations, yet the agent Greps CODEOWNERS files for owner questions."
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно: можно ли исправить выбор, лучше описав существующий инструмент, или сам инструмент устроен неверно. A: один инструмент делает три разные работы с разными контрактами, и агент путает виды входа; guide (2.1) предписывает разделить такой инструмент на инструменты под конкретную цель. C: имя get_ticket обещает чтение, а инструмент архивирует, и никакое описание не сделает просмотр тикета безопасным; запись выносят в отдельный инструмент. B, D и E это инструменты с одной целью, которым не хватает описания выходов, границ покрытия или отличий от альтернатив.",
+    "why_wrong_ru": {
+      "B": "Цель у инструмента одна: достаточно описать, что тег возвращает только финальный деплой, а откаты видны в запросе по имени сервиса.",
+      "D": "Граница покрытия это граничный случай для описания: два года и куда идти за более старыми документами.",
+      "E": "Подробное описание возможностей и выходов find_service объяснит агенту, когда он лучше Grep, интерфейс менять не нужно."
+    },
+    "takeaway_ru": "Одна цель, но непонятный выход → допиши описание. Несколько работ или скрытая запись → раздели.",
+    "signal_ru": "«Runs a different pipeline for each» и «also archives it» → интерфейс. Разные выходы одной цели, граница покрытия и короткое описание → описание."
+  },
+  {
+    "id": "g-tooldesc-04",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 4,
+    "focus": "Описание инструмента",
+    "targets": [
+      "s2-03"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your productivity agent searches logs with the MCP tool search_logs, described as 'Searches application logs. Accepts a request ID or a text query.' A request ID returns every line for that request across services, with no time limit. A text query searches only the last 24 hours and returns at most the 200 newest matching lines. Traces show two problems: asked how many timeouts checkout logged today, the agent reports exactly 200, and for errors from incidents two days old it answers 'nothing was logged.' What should you change first?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add a system prompt rule that search_logs must be called with a request ID whenever possible, since that path has no time limit."
+      },
+      {
+        "key": "B",
+        "text": "Change the server so text queries return every matching line instead of the 200 newest, so that counts are no longer cut off."
+      },
+      {
+        "key": "C",
+        "text": "Describe each path's limits: text queries cover only 24 hours and return at most 200 lines, so a count of 200 may be truncated."
+      },
+      {
+        "key": "D",
+        "text": "Split search_logs into search_logs_by_request and search_logs_by_text, so that each kind of input gets a tool of its own."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Оба симптома возникают из одного пробела в описании: агент не знает, что текстовый поиск покрывает только последние 24 часа и отдаёт не больше 200 строк, поэтому принимает обрезанный ответ за полный. Guide (2.1) требует описывать в инструменте входные форматы, выходные данные и граничные случаи. Разделение по типам входа (D) нужно, когда у инструмента несколько разных целей; здесь цель одна, и после разделения агент всё так же не узнает о лимитах.",
+    "why_wrong_ru": {
+      "A": "Request ID у инженера часто нет, а правило не сообщает агенту ни о лимите в 200 строк, ни об окне в 24 часа.",
+      "B": "Правка сервера лечит только обрезанный счёт, ответ «nothing was logged» за пределами суток остаётся, и это не первый шаг.",
+      "D": "Новый текстовый инструмент молча обрежет результат так же, ведь о лимитах агент по-прежнему не знает."
+    },
+    "takeaway_ru": "Лимиты и окна инструмента пиши в описании, иначе агент примет обрезанный ответ за полный.",
+    "signal_ru": "«Exactly 200» и «two days old» → агент не знает про лимит 200 строк и окно 24 часа. Цель у инструмента одна, поэтому разделение не поможет."
+  }
+]

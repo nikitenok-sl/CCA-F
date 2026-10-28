@@ -1,0 +1,458 @@
+[
+  {
+    "id": "off-01",
+    "official": true,
+    "domain": 1,
+    "task": "1.4",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Production data shows that in 12% of cases, your agent skips get_customer entirely and calls lookup_order using only the customer's stated name, occasionally leading to misidentified accounts and incorrect refunds. What change would most effectively address this reliability issue?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add a programmatic prerequisite that blocks lookup_order and process_refund calls until get_customer has returned a verified customer ID."
+      },
+      {
+        "key": "B",
+        "text": "Enhance the system prompt to state that customer verification via get_customer is mandatory before any order operations."
+      },
+      {
+        "key": "C",
+        "text": "Add few-shot examples showing the agent always calling get_customer first, even when customers volunteer order details."
+      },
+      {
+        "key": "D",
+        "text": "Implement a routing classifier that analyzes each request and enables only the subset of tools appropriate for that request type."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Когда для критичной бизнес-логики нужна определённая последовательность вызовов инструментов (например, проверка личности клиента перед возвратом денег), программное принуждение даёт детерминированные гарантии, которых не дают подходы на основе промпта. Prerequisite блокирует lookup_order и process_refund, пока get_customer не вернул верифицированный customer ID.",
+    "why_wrong_ru": {
+      "B": "Требование в системном промпте опирается на вероятностное следование LLM, а этого недостаточно, когда ошибка ведёт к финансовым потерям.",
+      "C": "Few-shot примеры тоже опираются на вероятностное следование модели и не гарантируют вызов get_customer в каждом случае.",
+      "D": "Routing classifier управляет доступностью инструментов, а не порядком их вызова, хотя проблема именно в порядке."
+    },
+    "takeaway_ru": "Обязательный порядок вызовов при операциях с деньгами → программный prerequisite, а не промпт."
+  },
+  {
+    "id": "off-02",
+    "official": true,
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Production logs show the agent frequently calls get_customer when users ask about orders (e.g., \"check my order #12345\"), instead of calling lookup_order. Both tools have minimal descriptions (\"Retrieves customer information\" / \"Retrieves order details\") and accept similar identifier formats. What's the most effective first step to improve tool selection reliability?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add few-shot examples to the system prompt demonstrating correct tool selection patterns, with 5-8 examples showing order-related queries routing to lookup_order."
+      },
+      {
+        "key": "B",
+        "text": "Expand each tool's description to include input formats it handles, example queries, edge cases, and boundaries explaining when to use it versus similar tools."
+      },
+      {
+        "key": "C",
+        "text": "Implement a routing layer that parses user input before each turn and pre-selects the appropriate tool based on detected keywords and identifier patterns."
+      },
+      {
+        "key": "D",
+        "text": "Consolidate both tools into a single lookup_entity tool that accepts any identifier and internally determines which backend to query."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Описания инструментов являются основным механизмом, по которому LLM выбирает инструмент. При минимальных описаниях модели не хватает контекста, чтобы различить похожие инструменты. Расширенные описания напрямую устраняют эту первопричину: это исправление с малыми усилиями и большим эффектом.",
+    "why_wrong_ru": {
+      "A": "Few-shot примеры добавляют расход токенов, но не устраняют первопричину, то есть неинформативные описания.",
+      "C": "Routing layer избыточен (over-engineered) и обходит понимание естественного языка самой LLM.",
+      "D": "Объединение инструментов допустимо как архитектурное решение, но требует больше усилий, чем оправдано для первого шага при слабых описаниях."
+    },
+    "takeaway_ru": "Модель путает похожие инструменты → сначала расширь их описания."
+  },
+  {
+    "id": "off-03",
+    "official": true,
+    "domain": 5,
+    "task": "5.2",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Your agent achieves 55% first-contact resolution, well below the 80% target. Logs show it escalates straightforward cases (standard damage replacements with photo evidence) while attempting to autonomously handle complex situations requiring policy exceptions. What's the most effective way to improve escalation calibration?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add explicit escalation criteria to your system prompt with few-shot examples demonstrating when to escalate versus resolve autonomously."
+      },
+      {
+        "key": "B",
+        "text": "Have the agent self-report a confidence score (1-10) before each response and automatically route requests to humans when confidence falls below a threshold."
+      },
+      {
+        "key": "C",
+        "text": "Deploy a separate classifier model trained on historical tickets to predict which requests need escalation before the main agent begins processing."
+      },
+      {
+        "key": "D",
+        "text": "Implement sentiment analysis to detect customer frustration levels and automatically escalate when negative sentiment exceeds a threshold."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Явные критерии эскалации с few-shot примерами напрямую устраняют первопричину: размытые границы принятия решения. Это соразмерный первый шаг до того, как добавлять инфраструктуру.",
+    "why_wrong_ru": {
+      "B": "Самооценка уверенности LLM плохо откалибрована: агент и так ошибочно уверен в сложных случаях.",
+      "C": "Отдельный классификатор избыточен: нужны размеченные данные и ML-инфраструктура, хотя оптимизацию промпта ещё не пробовали.",
+      "D": "Sentiment analysis решает другую задачу: тональность клиента не коррелирует со сложностью кейса, а проблема именно в сложности."
+    },
+    "takeaway_ru": "Плохая калибровка эскалации → явные критерии и few-shot в промпте, а не confidence score."
+  },
+  {
+    "id": "off-04",
+    "official": true,
+    "domain": 3,
+    "task": "3.2",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You want to create a custom /review slash command that runs your team's standard code review checklist. This command should be available to every developer when they clone or pull the repository. Where should you create this command file?",
+    "options": [
+      {
+        "key": "A",
+        "text": "In the .claude/commands/ directory in the project repository"
+      },
+      {
+        "key": "B",
+        "text": "In ~/.claude/commands/ in each developer's home directory"
+      },
+      {
+        "key": "C",
+        "text": "In the CLAUDE.md file at the project root"
+      },
+      {
+        "key": "D",
+        "text": "In a .claude/config.json file with a commands array"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Project-scoped кастомные slash-команды хранятся в директории .claude/commands/ внутри репозитория. Они находятся под version control и автоматически доступны всем разработчикам после clone или pull.",
+    "why_wrong_ru": {
+      "B": "~/.claude/commands/ предназначена для личных команд, которые не распространяются через version control.",
+      "C": "CLAUDE.md служит для инструкций и контекста проекта, а не для определения команд.",
+      "D": "Механизма конфигурации .claude/config.json с массивом commands в Claude Code не существует."
+    },
+    "takeaway_ru": "Командная slash-команда → .claude/commands/ в репозитории; личная → ~/.claude/commands/."
+  },
+  {
+    "id": "off-05",
+    "official": true,
+    "domain": 3,
+    "task": "3.4",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You've been assigned to restructure the team's monolithic application into microservices. This will involve changes across dozens of files and requires decisions about service boundaries and module dependencies. Which approach should you take?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Enter plan mode to explore the codebase, understand dependencies, and design an implementation approach before making changes."
+      },
+      {
+        "key": "B",
+        "text": "Start with direct execution and make changes incrementally, letting the implementation reveal the natural service boundaries."
+      },
+      {
+        "key": "C",
+        "text": "Use direct execution with comprehensive upfront instructions detailing exactly how each service should be structured."
+      },
+      {
+        "key": "D",
+        "text": "Begin in direct execution mode and only switch to plan mode if you encounter unexpected complexity during implementation."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Plan mode предназначен для сложных задач с масштабными изменениями, несколькими допустимыми подходами и архитектурными решениями, а переход от монолита к микросервисам требует именно этого. Он позволяет безопасно исследовать кодовую базу и спроектировать решение до внесения изменений.",
+    "why_wrong_ru": {
+      "B": "Постепенные изменения в direct execution грозят дорогой переделкой, когда зависимости обнаруживаются поздно.",
+      "C": "Подробные инструкции заранее предполагают, что правильная структура уже известна без исследования кода.",
+      "D": "Сложность уже указана в требованиях, а не появится позже, поэтому ждать её в direct execution неверно."
+    },
+    "takeaway_ru": "Архитектурные изменения на десятки файлов → сначала plan mode, потом выполнение."
+  },
+  {
+    "id": "off-06",
+    "official": true,
+    "domain": 3,
+    "task": "3.3",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your codebase has distinct areas with different coding conventions: React components use functional style with hooks, API handlers use async/await with specific error handling, and database models follow a repository pattern. Test files are spread throughout the codebase alongside the code they test (e.g., Button.test.tsx next to Button.tsx), and you want all tests to follow the same conventions regardless of location. What's the most maintainable way to ensure Claude automatically applies the correct conventions when generating code?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Create rule files in .claude/rules/ with YAML frontmatter specifying glob patterns to conditionally apply conventions based on file paths"
+      },
+      {
+        "key": "B",
+        "text": "Consolidate all conventions in the root CLAUDE.md file under headers for each area, relying on Claude to infer which section applies"
+      },
+      {
+        "key": "C",
+        "text": "Create skills in .claude/skills/ for each code type that include the relevant conventions in their SKILL.md files"
+      },
+      {
+        "key": "D",
+        "text": "Place a separate CLAUDE.md file in each subdirectory containing that area's specific conventions"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Файлы в .claude/rules/ с glob-паттернами в YAML frontmatter (например, **/*.test.tsx) позволяют автоматически применять соглашения по пути файла независимо от директории. Это критично для тестовых файлов, разбросанных по всей кодовой базе.",
+    "why_wrong_ru": {
+      "B": "Один корневой CLAUDE.md с разделами опирается на догадку модели, а не на явное сопоставление путей, поэтому ненадёжен.",
+      "C": "Skills требуют ручного вызова или решения Claude их загрузить, что противоречит требованию детерминированного автоматического применения по путям.",
+      "D": "CLAUDE.md привязаны к директориям и плохо подходят для файлов, разбросанных по многим директориям."
+    },
+    "takeaway_ru": "Соглашения по типу файла в разных папках → .claude/rules/ с glob-паттернами в paths."
+  },
+  {
+    "id": "off-07",
+    "official": true,
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "After running the system on the topic \"impact of AI on creative industries,\" you observe that each subagent completes successfully: the web search agent finds relevant articles, the document analysis agent summarizes papers correctly, and the synthesis agent produces coherent output. However, the final reports cover only visual arts, completely missing music, writing, and film production. When you examine the coordinator's logs, you see it decomposed the topic into three subtasks: \"AI in digital art creation,\" \"AI in graphic design,\" and \"AI in photography.\" What is the most likely root cause?",
+    "options": [
+      {
+        "key": "A",
+        "text": "The synthesis agent lacks instructions for identifying coverage gaps in the findings it receives from other agents."
+      },
+      {
+        "key": "B",
+        "text": "The coordinator agent's task decomposition is too narrow, resulting in subagent assignments that don't cover all relevant domains of the topic."
+      },
+      {
+        "key": "C",
+        "text": "The web search agent's queries are not comprehensive enough and need to be expanded to cover more creative industry sectors."
+      },
+      {
+        "key": "D",
+        "text": "The document analysis agent is filtering out sources related to non-visual creative industries due to overly restrictive relevance criteria."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Логи координатора прямо показывают первопричину: он разбил тему \"creative industries\" только на подзадачи по визуальным искусствам (digital art, graphic design, photography) и полностью упустил музыку, литературу и кино. Субагенты корректно выполнили свои задачи, проблема в том, что именно им назначили.",
+    "why_wrong_ru": {
+      "A": "Synthesis agent корректно работает в рамках полученного, а пробел в покрытии возник раньше, при декомпозиции у координатора.",
+      "C": "Web search agent корректно искал по назначенным подтемам, его запросы не причина пробела.",
+      "D": "Document analysis agent корректно работает в своём scope: источники по музыке, литературе и кино ему просто не поручали."
+    },
+    "takeaway_ru": "Субагенты отработали, а покрытия нет → проверь декомпозицию у координатора."
+  },
+  {
+    "id": "off-08",
+    "official": true,
+    "domain": 5,
+    "task": "5.3",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The web search subagent times out while researching a complex topic. You need to design how this failure information flows back to the coordinator agent. Which error propagation approach best enables intelligent recovery?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Return structured error context to the coordinator including the failure type, the attempted query, any partial results, and potential alternative approaches."
+      },
+      {
+        "key": "B",
+        "text": "Implement automatic retry logic with exponential backoff within the subagent, returning a generic \"search unavailable\" status only after all retries are exhausted."
+      },
+      {
+        "key": "C",
+        "text": "Catch the timeout within the subagent and return an empty result set marked as successful."
+      },
+      {
+        "key": "D",
+        "text": "Propagate the timeout exception directly to a top-level handler that terminates the entire research workflow."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Структурированный контекст ошибки даёт координатору информацию для осмысленного восстановления: повторить запрос с изменённым query, попробовать альтернативный подход или продолжить с частичными результатами. Поэтому субагент возвращает тип сбоя, исходный запрос, частичные результаты и возможные альтернативы.",
+    "why_wrong_ru": {
+      "B": "Обобщённый статус \"search unavailable\" скрывает от координатора ценный контекст и не даёт принять обоснованное решение.",
+      "C": "Пустой результат с пометкой успеха подавляет ошибку, исключает восстановление и грозит неполным результатом исследования.",
+      "D": "Завершение всего workflow избыточно, когда стратегии восстановления могли бы сработать."
+    },
+    "takeaway_ru": "Сбой субагента → структурированный контекст ошибки координатору, а не тихий успех или падение всего."
+  },
+  {
+    "id": "off-09",
+    "official": true,
+    "domain": 2,
+    "task": "2.3",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "During testing, you observe that the synthesis agent frequently needs to verify specific claims while combining findings. Currently, when verification is needed, the synthesis agent returns control to the coordinator, which invokes the web search agent, then re-invokes synthesis with results. This adds 2-3 round trips per task and increases latency by 40%. Your evaluation shows that 85% of these verifications are simple fact-checks (dates, names, statistics) while 15% require deeper investigation. What's the most effective approach to reduce overhead while maintaining system reliability?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Give the synthesis agent a scoped verify_fact tool for simple lookups, while complex verifications continue delegating to the web search agent through the coordinator."
+      },
+      {
+        "key": "B",
+        "text": "Have the synthesis agent accumulate all verification needs and return them as a batch to the coordinator at the end of its pass, which then sends them all to the web search agent at once."
+      },
+      {
+        "key": "C",
+        "text": "Give the synthesis agent access to all web search tools so it can handle any verification need directly without round-trips through the coordinator."
+      },
+      {
+        "key": "D",
+        "text": "Have the web search agent proactively cache extra context around each source during initial research, anticipating what the synthesis agent might need to verify."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Вариант A применяет принцип наименьших привилегий: synthesis agent получает только то, что нужно для частого случая (85% простых проверок фактов). Для сложных проверок сохраняется существующая схема координации через coordinator и web search agent.",
+    "why_wrong_ru": {
+      "B": "Пакетная отправка проверок создаёт блокирующие зависимости, так как шаги синтеза могут зависеть от уже проверенных фактов.",
+      "C": "Доступ ко всем инструментам web search избыточно расширяет полномочия synthesis agent и нарушает разделение ответственности.",
+      "D": "Спекулятивное кэширование не может надёжно предсказать, что synthesis agent понадобится проверять."
+    },
+    "takeaway_ru": "Частый простой случай → узкий scoped-инструмент агенту; сложный оставь через координатора."
+  },
+  {
+    "id": "off-10",
+    "official": true,
+    "domain": 3,
+    "task": "3.6",
+    "scenario": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "Your pipeline script runs claude \"Analyze this pull request for security issues\" but the job hangs indefinitely. Logs indicate Claude Code is waiting for interactive input. What's the correct approach to run Claude Code in an automated pipeline?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add the -p flag: claude -p \"Analyze this pull request for security issues\""
+      },
+      {
+        "key": "B",
+        "text": "Set the environment variable CLAUDE_HEADLESS=true before running the command"
+      },
+      {
+        "key": "C",
+        "text": "Redirect stdin from /dev/null: claude \"Analyze this pull request for security issues\" < /dev/null"
+      },
+      {
+        "key": "D",
+        "text": "Add the --batch flag: claude --batch \"Analyze this pull request for security issues\""
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Флаг -p (или --print) является документированным способом запустить Claude Code в неинтерактивном режиме. Он обрабатывает промпт, выводит результат в stdout и завершается, не ожидая ввода пользователя, что и нужно CI/CD-пайплайнам.",
+    "why_wrong_ru": {
+      "B": "Переменной окружения CLAUDE_HEADLESS не существует.",
+      "C": "Перенаправление stdin из /dev/null является Unix-обходом, который не решает задачу через синтаксис команды Claude Code.",
+      "D": "Флага --batch в Claude Code не существует."
+    },
+    "takeaway_ru": "Claude Code в CI → флаг -p (--print)."
+  },
+  {
+    "id": "off-11",
+    "official": true,
+    "domain": 4,
+    "task": "4.5",
+    "scenario": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team wants to reduce API costs for automated analysis. Currently, real-time Claude calls power two workflows: (1) a blocking pre-merge check that must complete before developers can merge, and (2) a technical debt report generated overnight for review the next morning. Your manager proposes switching both to the Message Batches API for its 50% cost savings. How should you evaluate this proposal?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Use batch processing for the technical debt reports only; keep real-time calls for pre-merge checks."
+      },
+      {
+        "key": "B",
+        "text": "Switch both workflows to batch processing with status polling to check for completion."
+      },
+      {
+        "key": "C",
+        "text": "Keep real-time calls for both workflows to avoid batch result ordering issues."
+      },
+      {
+        "key": "D",
+        "text": "Switch both to batch processing with a timeout fallback to real-time if batches take too long."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Message Batches API даёт экономию 50%, но обработка может занимать до 24 часов без гарантированного SLA по задержке. Поэтому он не подходит для блокирующих pre-merge проверок, где разработчики ждут результат, но идеален для ночных задач вроде отчёта по техническому долгу.",
+    "why_wrong_ru": {
+      "B": "Для блокирующего workflow нельзя полагаться на то, что batch \"часто\" завершается быстрее: гарантии по задержке нет.",
+      "C": "Проблемы порядка результатов нет: ответы batch сопоставляются с запросами через поле custom_id.",
+      "D": "Timeout fallback на real-time добавляет лишнюю сложность, когда проще сопоставить каждому workflow подходящий API."
+    },
+    "takeaway_ru": "Кто-то ждёт результат → real-time; ночные отчёты без SLA → Message Batches API."
+  },
+  {
+    "id": "off-12",
+    "official": true,
+    "domain": 4,
+    "task": "4.6",
+    "scenario": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "A pull request modifies 14 files across the stock tracking module. Your single-pass review analyzing all files together produces inconsistent results: detailed feedback for some files but superficial comments for others, obvious bugs missed, and contradictory feedback—flagging a pattern as problematic in one file while approving identical code elsewhere in the same PR. How should you restructure the review?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Split into focused passes: analyze each file individually for local issues, then run a separate integration-focused pass examining cross-file data flow."
+      },
+      {
+        "key": "B",
+        "text": "Require developers to split large PRs into smaller submissions of 3-4 files before the automated review runs."
+      },
+      {
+        "key": "C",
+        "text": "Switch to a higher-tier model with a larger context window to give all 14 files adequate attention in one pass."
+      },
+      {
+        "key": "D",
+        "text": "Run three independent review passes on the full PR and only flag issues that appear in at least two of the three runs."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Разделение ревью на сфокусированные проходы устраняет первопричину: размывание внимания (attention dilution) при обработке многих файлов сразу. Пофайловый анализ даёт одинаковую глубину, а отдельный интеграционный проход ловит межфайловые проблемы.",
+    "why_wrong_ru": {
+      "B": "Требование дробить PR перекладывает нагрузку на разработчиков и не улучшает саму систему.",
+      "C": "Большее контекстное окно не решает проблему качества внимания.",
+      "D": "Требование консенсуса двух из трёх прогонов подавит реальные баги, которые находятся лишь эпизодически."
+    },
+    "takeaway_ru": "Много файлов в одном проходе → пофайловые проходы плюс отдельный интеграционный проход."
+  }
+]

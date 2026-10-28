@@ -1,0 +1,615 @@
+[
+ {
+  "id": "f-review-01",
+  "domain": 1,
+  "task": "1.6",
+  "scenario": 5,
+  "focus": "Архитектура ревью",
+  "targets": [
+   "off-12"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "To fix attention dilution, your CI reviewer now runs one pass per changed file, and each pass sees only that file's diff. Per-file feedback is consistent now, but a bug shipped in a 19-file PR: orders/serializer.ts renamed total_cents to amount_cents, while billing/invoice.ts, changed in the same PR, still reads total_cents. Both per-file passes reported no issues, and similar cross-file misses appear in 4 of the last 30 multi-file PRs. What is the best change?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Return to a single pass over all files in the PR, so that the reviewer can see how the changed files reference each other."
+   },
+   {
+    "key": "B",
+    "text": "Give every per-file pass the full diff of the PR as context, while each pass still reports issues only for its own file."
+   },
+   {
+    "key": "C",
+    "text": "Run each per-file pass three times and flag any file whose three reviews disagree about whether it contains an issue."
+   },
+   {
+    "key": "D",
+    "text": "Keep the per-file passes and add a separate integration pass that checks data flow and interfaces between the files."
+   }
+  ],
+  "answer": [
+   "D"
+  ],
+  "explanation_ru": "Пофайловый проход видит только свой файл, поэтому межфайловая ошибка, например переименованное поле, которое читает другой модуль, ему не видна по построению. Гайд описывает схему целиком: локальные проходы по каждому файлу плюс отдельный интеграционный проход, который проверяет поток данных между файлами. Возврат к одному проходу по всему PR снова включает размывание внимания, от которого команда и ушла.",
+  "why_wrong_ru": {
+   "A": "Один проход по всем 19 файлам возвращает размывание внимания и неровную глубину, из-за которых перешли на пофайловые проходы.",
+   "B": "Каждый проход снова получает весь PR и теряет фокус, а проверка связей между файлами так и не становится чьей-то отдельной задачей.",
+   "C": "Повтор локальных проходов не показывает им второй файл, поэтому все три прогона одинаково пропустят межфайловую ошибку."
+  },
+  "takeaway_ru": "Пофайловые проходы ловят локальное, межфайловое ловит только отдельный интеграционный проход.",
+  "signal_ru": "«Оба пофайловых прохода чисты», а баг на стыке двух файлов → не хватает интеграционного прохода; возврат к одному проходу вернёт размывание внимания."
+ },
+ {
+  "id": "f-review-02",
+  "domain": 4,
+  "task": "4.6",
+  "scenario": 5,
+  "focus": "Архитектура ревью",
+  "targets": [
+   "off-12"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your pipeline runs one claude -p job that writes a database migration and a second, separate claude -p job that reviews it. To \"give the reviewer the full picture,\" the review prompt includes the generator's whole transcript: its plan, the alternatives it rejected, and its reasoning for each step. Over six weeks the reviewer approved 94% of migrations, yet DBAs later found lock-heavy ALTER TABLE statements in 11 approved ones, each argued to be safe in the transcript. What change most improves the review?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Give the reviewer only the migration diff, the current schema, and the requirements, without the generator's reasoning."
+   },
+   {
+    "key": "B",
+    "text": "Keep the transcript in the prompt but enable extended thinking, so the reviewer weighs every argument more carefully."
+   },
+   {
+    "key": "C",
+    "text": "Keep the transcript and tell the reviewer to treat each claim in it as unverified until it has checked the diff itself."
+   },
+   {
+    "key": "D",
+    "text": "Move the review into the generator's own session, which already holds the transcript and needs no separate copy of it."
+   }
+  ],
+  "answer": [
+   "A"
+  ],
+  "explanation_ru": "Ревьюер, получивший рассуждения генератора, наследует его допущения: доводы «это безопасно» уже лежат в контексте, и он с ними соглашается. Гайд говорит, что независимый экземпляр без контекста рассуждений генератора ловит тонкие ошибки лучше, чем самопроверка или extended thinking. Отдельный процесс claude -p сам по себе не даёт независимости, если в его промпт скопирован весь транскрипт автора.",
+  "why_wrong_ru": {
+   "B": "Extended thinking углубляет рассуждение, но ревьюер рассуждает поверх тех же доводов генератора, и источник слепого пятна остаётся в контексте.",
+   "C": "Инструкция «не доверяй» не убирает доводы из контекста, модель продолжает на них опираться, это вероятностная мера вместо устранения причины.",
+   "D": "Ревью в сессии генератора это самопроверка, которая по гайду хуже всего ловит собственные ошибки автора."
+  },
+  "takeaway_ru": "Независимый ревьюер получает diff и требования, но не рассуждения автора.",
+  "signal_ru": "«Транскрипт генератора в промпте ревьюера» и «каждый ALTER обоснован в транскрипте» → убрать контекст рассуждений автора, а не усиливать мышление ревьюера."
+ },
+ {
+  "id": "f-review-03",
+  "domain": 5,
+  "task": "5.5",
+  "scenario": 5,
+  "focus": "Архитектура ревью",
+  "targets": [
+   "d4-12"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your CI reviewer emits about 230 findings a day, and a verification pass now adds a self-reported confidence score to each finding. You plan to auto-post high-confidence findings and send the rest to three triage engineers, who together can check about 55 a day. Developers' accept and dismiss decisions on the last three months of findings are stored in your PR database. How should you set the routing threshold?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Start the cutoff at 0.9, since models tend to be overconfident, and lower it while the triage queue stays under 55."
+   },
+   {
+    "key": "B",
+    "text": "Pick the score that sends the 55 lowest-scoring findings a day to triage, so that the engineers' capacity is fully used."
+   },
+   {
+    "key": "C",
+    "text": "Score the past findings, measure developer acceptance per score band, and choose the cutoff from that calibration."
+   },
+   {
+    "key": "D",
+    "text": "Have the model explain each score in a reasoning field, and lower its scores whenever the reasoning looks weak."
+   }
+  ],
+  "answer": [
+   "C"
+  ],
+  "explanation_ru": "Самооценка уверенности сама по себе не откалибрована: 0.9 у модели не означает, что 90% таких находок примут. Гайд требует калибровать пороги на размеченном наборе, здесь это прошлые находки с решением разработчика (принята или отклонена). По таблице «диапазон оценки → доля принятых» выбирают порог, при котором автопубликация достаточно точна, а очередь триажа укладывается в 55 находок в день.",
+  "why_wrong_ru": {
+   "A": "Порог 0.9 выбран на глаз, без данных о том, какая доля находок с такой оценкой реально принимается.",
+   "B": "Порог по ёмкости заполняет очередь людей, но не проверяет, что находки выше порога действительно верны.",
+   "D": "Поле с рассуждением не калибрует оценку, а ручная правка по «слабому» объяснению остаётся субъективной."
+  },
+  "takeaway_ru": "Порог уверенности задаёт калибровка на размеченных прошлых находках, а не интуиция или ёмкость.",
+  "signal_ru": "«Решения разработчиков за три месяца сохранены» → есть размеченные данные для калибровки; ёмкость 55 в день влияет на выбор порога, но не заменяет калибровку."
+ },
+ {
+  "id": "f-review-04",
+  "domain": 4,
+  "task": "4.6",
+  "scenario": 5,
+  "focus": "Архитектура ревью",
+  "targets": [
+   "off-12"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your CI pipeline has two review problems. (1) The test-generation job uses one claude -p prompt: \"Write unit tests for the changed module, then review them and mark weak ones.\" It marks 4% as weak, yet humans later reject 27% of the rest, mostly tests that assert what the new code does rather than what the spec requires. (2) On PRs over 30 files, a seeded-bug audit shows the reviewer catches 81% of bugs planted in the first ten files of the diff but only 23% in the last ten. Which TWO changes address these problems? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "Enable extended thinking for the combined call, so Claude reasons longer before it marks any of its tests as strong."
+   },
+   {
+    "key": "B",
+    "text": "Review the tests in a separate claude -p run that receives the spec and the tests, but not the generation context."
+   },
+   {
+    "key": "C",
+    "text": "Present the changed files in a random order on each run, so no file is always placed at the end of the reviewer's input."
+   },
+   {
+    "key": "D",
+    "text": "Run the full-PR review three times and post only the comments that at least two of the three runs produce."
+   },
+   {
+    "key": "E",
+    "text": "Review each file in its own pass for local issues, then run one separate pass for interactions across files."
+   }
+  ],
+  "answer": [
+   "B",
+   "E"
+  ],
+  "explanation_ru": "Каждый вариант оценивается отдельно. Проблему (1) решает B: когда один вызов и пишет тесты, и проверяет их, это самопроверка, и модель не ставит под сомнение свои же допущения. Независимый запуск, который видит спецификацию и тесты без контекста генерации, по гайду ловит такие ошибки лучше самопроверки и extended thinking. Проблему (2) решает E: падение точности к концу diff это размывание внимания, а пофайловые проходы плюс отдельный интеграционный проход дают одинаковую глубину по всем файлам.",
+  "why_wrong_ru": {
+   "A": "Extended thinking в том же вызове остаётся самопроверкой, допущения генератора по-прежнему лежат в его контексте.",
+   "C": "Случайный порядок лишь размазывает пропуски по разным файлам, 30 файлов в одном проходе всё так же размывают внимание.",
+   "D": "Консенсус двух прогонов из трёх подавляет реальные находки, которые ловятся нерегулярно, и не выравнивает глубину по файлам."
+  },
+  "takeaway_ru": "Генератор не проверяет себя сам; большой PR ревьюят по файлам плюс интеграционным проходом.",
+  "signal_ru": "«Один промпт пишет и проверяет» → отдельный независимый запуск; «81% в первых файлах, 23% в последних» → пофайловые проходы, а не перемешивание порядка."
+ },
+ {
+  "id": "f-review-05",
+  "domain": 3,
+  "task": "3.6",
+  "scenario": 5,
+  "focus": "Архитектура ревью",
+  "targets": [
+   "d4-12"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your PR reviewer runs claude -p on every push. To stop duplicate comments, each run's prompt now lists the previous run's findings with the instruction \"Report only issues not listed above.\" Duplicates are gone. But on a payments PR, the developer pushed a commit titled \"fix race in refund handler\" that did not actually fix the race; the reviewer said nothing about it, the thread was resolved, and the PR was merged. What change best fixes the review step?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Remove the prior findings from the prompt, so that each run reviews the full diff from scratch and reports all it finds."
+   },
+   {
+    "key": "B",
+    "text": "Keep the prior findings, and ask for new issues plus any prior ones that the latest commits still leave unaddressed."
+   },
+   {
+    "key": "C",
+    "text": "Keep the prompt as it is, and have the posting script reopen every resolved thread whose file has changed since then."
+   },
+   {
+    "key": "D",
+    "text": "Use --resume to continue the previous run's session, so that Claude remembers which findings it raised before."
+   }
+  ],
+  "answer": [
+   "B"
+  ],
+  "explanation_ru": "Гайд требует при повторном ревью передавать прошлые находки и просить сообщать только о новых или всё ещё не исправленных проблемах. Инструкция «только то, чего нет в списке» убрала дубли, но заодно скрыла находки, которые коммит на самом деле не исправил. Модель должна сверить каждую прошлую находку с новыми коммитами и повторить только те, что остались.",
+  "why_wrong_ru": {
+   "A": "Без прошлых находок каждый прогон снова публикует все старые проблемы, и дубли возвращаются.",
+   "C": "Скрипт по факту изменения файла не знает, исправлена ли проблема, и переоткроет треды, закрытые правильно.",
+   "D": "Прошлые находки и так уже есть в промпте, проблема в правиле «только новые», а --resume это правило не меняет."
+  },
+  "takeaway_ru": "Повторное ревью: прошлые находки в контекст, отчёт о новых и ещё не исправленных.",
+  "signal_ru": "Коммит «fix race» не исправил гонку, а ревьюер промолчал → «не повторять» скрыло неисправленное; нужно «новые или всё ещё не исправленные»."
+ },
+ {
+  "id": "f-review-06",
+  "domain": 4,
+  "task": "4.6",
+  "scenario": 5,
+  "focus": "Архитектура ревью",
+  "targets": [
+   "d4-12"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your team keeps a playbook for its CI reviewer. For each problem below, an engineer proposed the same fix: a verification pass that gives every finding a confidence score, calibrated on past findings labeled by developer outcome, with findings routed by that score. Judging each problem on its own, which TWO are best solved this way? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "One security engineer can review 25 of 120 daily findings and needs the most doubtful ones to reach her first."
+   },
+   {
+    "key": "B",
+    "text": "Developers dismiss 78% of naming-style findings, and that category is eroding their trust in the other categories."
+   },
+   {
+    "key": "C",
+    "text": "The session that generated a fix approves it during its own review step, missing bugs it had argued were intended."
+   },
+   {
+    "key": "D",
+    "text": "On every push the reviewer reposts the same unresolved findings, burying new issues under duplicate comments."
+   },
+   {
+    "key": "E",
+    "text": "The team wants to auto-post only findings likely to be accepted and hold the uncertain ones for an engineer."
+   }
+  ],
+  "answer": [
+   "A",
+   "E"
+  ],
+  "explanation_ru": "Каждая ситуация оценивается отдельно. Калиброванная уверенность на каждой находке решает задачу маршрутизации: A (куда направить 25 проверок из 120) и E (что публиковать автоматически, а что держать для человека). Это не инструкция в промпте «сообщай только уверенные находки»: сомнительные находки не выбрасываются, а уходят человеку, и порог проверен на размеченных данных. B решается явными критериями или временным отключением шумной категории, C отдельным независимым экземпляром, D передачей прошлых находок в контекст.",
+  "why_wrong_ru": {
+   "B": "Для шумной категории гайд рекомендует явные критерии или её временное отключение, а не фильтрацию по уверенности.",
+   "C": "Самопроверка лечится независимым экземпляром без контекста генерации, а оценка уверенности той же сессии унаследует её слепое пятно.",
+   "D": "Дубли при повторных прогонах убирает передача прошлых находок с инструкцией сообщать только новые или неисправленные."
+  },
+  "takeaway_ru": "Калиброванная уверенность распределяет внимание людей; шум категорий, самопроверку и дубли она не лечит.",
+  "signal_ru": "«Направить первыми», «держать для человека», «25 из 120» → маршрутизация по уверенности; «категория шумит», «та же сессия», «повторяет» → другие инструменты."
+ },
+ {
+  "id": "f-config-01",
+  "domain": 3,
+  "task": "3.2",
+  "scenario": 2,
+  "focus": "Конфигурация Claude Code",
+  "targets": [
+   "d3-04"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your team's project skill /bump-dep upgrades one npm dependency, runs the test suite, and summarizes breaking changes. Developers often type /bump-dep without naming a package. Claude then scans all 40 package.json files, picks whichever dependency looks most outdated, and adds about 18,000 tokens of scan output to the session. Twice last month it upgraded a package nobody had asked about. Which SKILL.md frontmatter change addresses the root cause?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Add context: fork so the package scan runs in an isolated sub-agent and its output stays out of the main session."
+   },
+   {
+    "key": "B",
+    "text": "Add argument-hint: \"<package> [version]\" so developers who invoke the skill bare are prompted for the package."
+   },
+   {
+    "key": "C",
+    "text": "Add allowed-tools: Read, Edit so the skill can no longer run the npm commands it uses to find outdated packages."
+   },
+   {
+    "key": "D",
+    "text": "Add required-args: [package] so Claude Code refuses to start the skill until a package name has been supplied."
+   }
+  ],
+  "answer": [
+   "B"
+  ],
+  "explanation_ru": "Корень проблемы в отсутствующем параметре: без имени пакета Claude сам выбирает, что обновлять. argument-hint во frontmatter подсказывает разработчику обязательные параметры, когда навык вызван без аргументов, и угадывание прекращается. context: fork лишь спрятал бы вывод сканирования, а Claude по-прежнему обновлял бы не тот пакет.",
+  "why_wrong_ru": {
+   "A": "Изоляция убирает 18 000 токенов из сессии, но навык всё так же сам выбирает пакет, и ошибка остаётся.",
+   "C": "Без запуска npm навык не сможет обновить зависимость и прогнать тесты, а проблема выбора пакета не решится.",
+   "D": "Ключа required-args во frontmatter SKILL.md не существует, подсказку параметров даёт argument-hint."
+  },
+  "takeaway_ru": "Навык вызывают без нужного параметра → argument-hint; context: fork прячет вывод, но не лечит угадывание.",
+  "signal_ru": "«Вызывают без имени пакета» и «обновил пакет, о котором не просили» → не хватает параметра, argument-hint; 18 000 токенов вывода тут следствие, а не причина."
+ },
+ {
+  "id": "f-config-02",
+  "domain": 3,
+  "task": "3.2",
+  "scenario": 2,
+  "focus": "Конфигурация Claude Code",
+  "targets": [
+   "d3-04"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your project skill /fixture-refresh reads API response types and rewrites the JSON files in tests/fixtures/. Last week, while \"making sure the fixtures match the database,\" it ran npm run db:reset through Bash and wiped a developer's local data. The skill only needs to read source files and write fixture files. A teammate suggests adding context: fork \"so whatever the skill does stays isolated.\" What change to SKILL.md best prevents a repeat?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Add context: fork so the skill runs in an isolated sub-agent and its actions cannot reach the developer's machine."
+   },
+   {
+    "key": "B",
+    "text": "Add a line at the top of the skill's instructions: \"Never run database resets or any other destructive commands.\""
+   },
+   {
+    "key": "C",
+    "text": "Add allowed-tools limited to the read and file-write tools, so Bash is not available while the skill is running."
+   },
+   {
+    "key": "D",
+    "text": "Add confirm-bash: true to the frontmatter so each Bash command in the skill must be approved before it runs."
+   }
+  ],
+  "answer": [
+   "C"
+  ],
+  "explanation_ru": "allowed-tools во frontmatter ограничивает инструменты, доступные навыку: если оставить только чтение и запись файлов, команда db:reset через Bash становится невозможной. context: fork изолирует контекст, а не побочные эффекты: сабагент работает на той же машине с теми же инструментами и может так же стереть базу. Запрет в тексте навыка вероятностен, а ограничение инструментов детерминировано.",
+  "why_wrong_ru": {
+   "A": "Форк изолирует контекст разговора, а не файловую систему и базу, сабагент выполнит ту же команду с тем же результатом.",
+   "B": "Запрет в тексте промпта модель может нарушить, а ограничение инструментов исключает такое действие полностью.",
+   "D": "Ключа confirm-bash во frontmatter SKILL.md не существует, ограничение инструментов задаётся через allowed-tools."
+  },
+  "takeaway_ru": "context: fork изолирует контекст, allowed-tools ограничивает действия; от разрушительных команд защищает второе.",
+  "signal_ru": "«Стёр локальную базу через Bash» и «нужны только чтение и запись файлов» → allowed-tools; предложение fork «для изоляции» путает изоляцию контекста с изоляцией действий."
+ },
+ {
+  "id": "f-config-03",
+  "domain": 3,
+  "task": "3.2",
+  "scenario": 4,
+  "focus": "Конфигурация Claude Code",
+  "targets": [
+   "d3-04"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your project skill /bench-hotpaths already has allowed-tools: Read, Grep, Bash(npm run bench:*), and developers always pass it a module name. It runs benchmarks and prints about 22,000 tokens of timing tables and profiler output before a 10-line recommendation. Later in the same session, Claude quotes stale benchmark numbers while editing unrelated code. A teammate proposes tightening allowed-tools to Read and Grep only. What is the best change?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Tighten allowed-tools to Read and Grep as proposed, so that the skill can no longer produce the benchmark output."
+   },
+   {
+    "key": "B",
+    "text": "Add argument-hint: \"<module> <function>\" so each run benchmarks a narrower target and prints fewer tables."
+   },
+   {
+    "key": "C",
+    "text": "Ask developers to run /clear after each /bench-hotpaths run, before they return to the edits they were making."
+   },
+   {
+    "key": "D",
+    "text": "Add context: fork so the benchmarks run in an isolated sub-agent and only the 10-line recommendation returns."
+   }
+  ],
+  "answer": [
+   "D"
+  ],
+  "explanation_ru": "Проблема в том, куда попадает вывод, а не в том, какие инструменты доступны: 22 000 токенов таблиц остаются в основной сессии и потом всплывают в несвязанных правках. context: fork запускает навык в изолированном контексте сабагента, и в сессию возвращается только итоговая рекомендация. allowed-tools уже ограничен разумно, а его ужесточение просто сломает навык.",
+  "why_wrong_ru": {
+   "A": "Без Bash навык не сможет запускать бенчмарки, то есть перестанет выполнять свою задачу, а вывод так и не будет изолирован.",
+   "B": "Модуль и так всегда передают, а более узкая цель уменьшит вывод, но он всё равно попадёт в основную сессию.",
+   "C": "/clear сотрёт и рекомендацию, и всю предыдущую работу сессии, это потеря контекста, а не его изоляция."
+  },
+  "takeaway_ru": "Ограничить действия → allowed-tools, убрать объёмный вывод из сессии → context: fork.",
+  "signal_ru": "«allowed-tools уже задан», «модуль всегда передают» и «22 000 токенов перед итогом из 10 строк» → проблема в выводе, context: fork."
+ },
+ {
+  "id": "f-config-04",
+  "domain": 3,
+  "task": "3.2",
+  "scenario": 2,
+  "focus": "Конфигурация Claude Code",
+  "targets": [
+   "d3-04"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your team's project skill /compare-libs evaluates two candidate libraries for a task: it reads their docs and the repo's existing usage, drafts prototype snippets in the conversation, and ends with a one-paragraph recommendation. Two problems keep recurring. About half the time developers invoke it bare, and Claude picks the two libraries itself. And each run leaves about 30,000 tokens of prototypes and notes in the session, after which Claude mixes the rejected library's APIs into real code. Which TWO SKILL.md frontmatter changes address these problems? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "Add allowed-tools: Read, Grep so the skill cannot write the prototype snippets that later leak into real code."
+   },
+   {
+    "key": "B",
+    "text": "Add max-output-tokens: 2000 so that a single run cannot add more than 2,000 tokens to the developer's session."
+   },
+   {
+    "key": "C",
+    "text": "Add argument-hint: \"<library-a> <library-b> <use-case>\" so a bare invocation prompts for both libraries."
+   },
+   {
+    "key": "D",
+    "text": "Move the skill to ~/.claude/skills/ for the two architects, who always pass both library names when they run it."
+   },
+   {
+    "key": "E",
+    "text": "Add context: fork so the evaluation runs in an isolated sub-agent and only the recommendation comes back."
+   }
+  ],
+  "answer": [
+   "C",
+   "E"
+  ],
+  "explanation_ru": "Каждый вариант оценивается отдельно. Первую проблему (вызов без аргументов) решает C: argument-hint подсказывает разработчику, какие две библиотеки нужно указать. Вторую проблему (30 000 токенов прототипов в сессии) решает E: context: fork выполняет оценку в изолированном сабагенте и возвращает только рекомендацию. allowed-tools здесь ловушка: прототипы утекают в код через контекст разговора, а не через файлы.",
+  "why_wrong_ru": {
+   "A": "Прототипы пишутся в разговор, а не в файлы, поэтому запрет записи не убирает их из контекста, через который и идёт смешение API.",
+   "B": "Ключа max-output-tokens во frontmatter SKILL.md не существует, изоляцию вывода даёт context: fork.",
+   "D": "Перенос в пользовательскую директорию отбирает навык у команды и не убирает объёмный вывод из сессий архитекторов."
+  },
+  "takeaway_ru": "Нет параметров → argument-hint; объёмный исследовательский вывод → context: fork; allowed-tools только про инструменты.",
+  "signal_ru": "«Вызывают без аргументов» → argument-hint; «30 000 токенов прототипов, потом смешивает API» → context: fork; запись файлов тут ни при чём."
+ },
+ {
+  "id": "f-config-05",
+  "domain": 3,
+  "task": "3.3",
+  "scenario": 2,
+  "focus": "Конфигурация Claude Code",
+  "targets": [
+   "off-06"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "You are splitting a 1,200-line root CLAUDE.md in a React monorepo, and two sections cause trouble. (1) Storybook conventions for *.stories.tsx files, which sit next to their components in 31 directories across apps/ and packages/; new directories with stories appear every sprint. (2) Olena's personal preference that Claude explain every change step by step before editing; three teammates say it slows their sessions down. Which TWO placements fit? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "Put the Storybook conventions in .claude/rules/storybook.md with paths: [\"**/*.stories.tsx\"] in its frontmatter."
+   },
+   {
+    "key": "B",
+    "text": "Put a CLAUDE.md with the Storybook conventions into each of the 31 directories that currently hold stories."
+   },
+   {
+    "key": "C",
+    "text": "Put Olena's preference in .claude/rules/olena.md with paths: [\"**/*\"], so it applies only while she edits code."
+   },
+   {
+    "key": "D",
+    "text": "Move Olena's preference into her own ~/.claude/CLAUDE.md, which is not shared with teammates via the repo."
+   },
+   {
+    "key": "E",
+    "text": "Turn the Storybook conventions into a /storybook skill that developers invoke before they edit any of the story files."
+   }
+  ],
+  "answer": [
+   "A",
+   "D"
+  ],
+  "explanation_ru": "Каждый вариант оценивается отдельно. Для (1) подходит A: правило в .claude/rules/ с glob в paths применяется к файлам по типу в любой директории, включая новые. Для (2) подходит D: ~/.claude/CLAUDE.md относится к пользовательскому уровню и не попадает к коллегам через репозиторий. CLAUDE.md директории привязан к месту, а paths в rules сопоставляет файлы, а не людей.",
+  "why_wrong_ru": {
+   "B": "CLAUDE.md привязан к директории: 31 копию придётся поддерживать, а новые директории останутся без соглашений.",
+   "C": "Файлы в .claude/rules/ коммитятся и загружаются у всех, paths фильтрует файлы, а не пользователя, и **/* совпадёт с любым файлом.",
+   "E": "Навык загружается по требованию, а соглашения должны применяться автоматически при каждой правке stories."
+  },
+  "takeaway_ru": "Соглашения по типу файла → rules с glob; личные предпочтения → ~/.claude/CLAUDE.md.",
+  "signal_ru": "«31 директория, новые каждый спринт» → glob в .claude/rules/, а не CLAUDE.md директорий; «личное предпочтение мешает коллегам» → ~/.claude/CLAUDE.md."
+ },
+ {
+  "id": "f-config-06",
+  "domain": 3,
+  "task": "3.2",
+  "scenario": 2,
+  "focus": "Конфигурация Claude Code",
+  "targets": [
+   "d3-04"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your team's project skill /review lives in .claude/skills/review/SKILL.md and runs the shared review checklist. Dmytro, who maintains the accessibility layer, wants extra checks for his own work: ARIA roles, focus order, contrast tokens. Last month he added them to the project SKILL.md, and for two weeks every teammate's /review flagged accessibility nits on backend PRs until the change was reverted. How should Dmytro get his checks without affecting teammates?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Create a personal skill in ~/.claude/skills/ under a different name, such as /review-a11y, that holds his checks."
+   },
+   {
+    "key": "B",
+    "text": "Commit his checks as a new skill, .claude/skills/review-a11y/SKILL.md, so that the shared /review stays as it is."
+   },
+   {
+    "key": "C",
+    "text": "Put his checks in .claude/rules/a11y.md with paths: [\"**/*\"], so that they load whenever he is editing any code."
+   },
+   {
+    "key": "D",
+    "text": "Add his checks to the project CLAUDE.md under a \"Dmytro only\" heading and rely on Claude to apply them to him."
+   }
+  ],
+  "answer": [
+   "A"
+  ],
+  "explanation_ru": "Гайд описывает именно этот приём: личный вариант навыка в ~/.claude/skills/ под другим именем, чтобы не затрагивать коллег. Пользовательская директория не попадает в репозиторий, а другое имя не пересекается с общим /review. Любое место внутри репозитория (.claude/skills/, .claude/rules/, CLAUDE.md) делится со всей командой через контроль версий.",
+  "why_wrong_ru": {
+   "B": "Навык в .claude/skills/ репозитория получат все коллеги, и Claude может подгружать его в их сессиях по описанию.",
+   "C": "Файл в .claude/rules/ коммитится и загружается у всех, а paths: [\"**/*\"] совпадает с любым файлом любого разработчика.",
+   "D": "Проектный CLAUDE.md загружается у всех, а применение «только для Dmytro» держится на догадке модели."
+  },
+  "takeaway_ru": "Личный вариант общего навыка → ~/.claude/skills/ под другим именем.",
+  "signal_ru": "«Для своей работы» и «не затрагивая коллег» → пользовательский уровень ~/.claude/skills/ с новым именем; всё внутри репозитория делится с командой."
+ },
+ {
+  "id": "f-config-07",
+  "domain": 3,
+  "task": "3.6",
+  "scenario": 5,
+  "focus": "Конфигурация Claude Code",
+  "targets": [
+   "d3-12"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your CI job runs claude -p to propose unit tests for changed modules, and it has two problems. (1) When the tech lead runs the same command on his laptop, the tests use the shared factories in tests/fixtures/, but CI-generated tests build data by hand; the testing standards and the fixture catalog are in his ~/.claude/CLAUDE.md. (2) To avoid duplicates, the job passes the names of existing spec/ files, yet 40% of proposals repeat scenarios those files already cover. Which TWO changes fix these problems? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "Move the testing standards and fixture catalog into the project CLAUDE.md, which CI loads from the repository."
+   },
+   {
+    "key": "B",
+    "text": "Add an @~/.claude/CLAUDE.md import line to the project CLAUDE.md so that CI sessions also load the lead's file."
+   },
+   {
+    "key": "C",
+    "text": "Pass the contents of the existing spec/ test files for each changed module to Claude, not only their file names."
+   },
+   {
+    "key": "D",
+    "text": "Add a duplicate_of field to the --json-schema so that Claude flags each proposal that repeats an existing test case."
+   },
+   {
+    "key": "E",
+    "text": "Move the standards into a /testing-guide skill with an argument-hint, so the job is prompted for the module."
+   }
+  ],
+  "answer": [
+   "A",
+   "C"
+  ],
+  "explanation_ru": "Каждый вариант оценивается отдельно. Проблему (1) решает A: ~/.claude/CLAUDE.md относится к пользовательскому уровню и есть только на ноутбуке лида, а CI загружает проектный CLAUDE.md из репозитория, это и есть механизм передачи стандартов и фикстур в CI. Проблему (2) решает C: по одним именам файлов нельзя понять, какие сценарии уже покрыты, гайд требует давать в контекст сами существующие тесты.",
+  "why_wrong_ru": {
+   "B": "На CI-раннере @~/.claude/CLAUDE.md указывает на домашнюю директорию раннера, где файла лида нет, и стандарты так и остаются вне репозитория.",
+   "D": "Схема задаёт формат ответа, но без содержимого тестов Claude не знает, что повторяет, и поле останется пустым или будет угадано.",
+   "E": "Навык загружается только по вызову, а в запуске -p его никто не вызывает и некому ответить на подсказку argument-hint."
+  },
+  "takeaway_ru": "CI видит только репозиторий: стандарты в проектный CLAUDE.md, существующие тесты целиком в контекст.",
+  "signal_ru": "«На ноутбуке лида работает, в CI нет» и «~/.claude/CLAUDE.md» → проектный уровень; «передаём только имена файлов» → нужно содержимое тестов."
+ },
+ {
+  "id": "f-config-08",
+  "domain": 3,
+  "task": "3.3",
+  "scenario": 4,
+  "focus": "Конфигурация Claude Code",
+  "targets": [
+   "off-06"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your platform keeps gRPC contracts in .proto files spread across 17 service directories plus a shared protos/ folder, and new services appear monthly. The proto conventions (field numbering, reserved ranges, no required fields) live in a /proto-style skill whose description says \"use when editing .proto files.\" An audit finds that 38% of .proto edits broke the conventions, and in those sessions the skill was never loaded. What is the most reliable fix?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Rewrite the skill's description to name every directory that holds .proto files, so Claude loads it more reliably."
+   },
+   {
+    "key": "B",
+    "text": "Add a CLAUDE.md with the proto conventions to protos/ and to each of the 17 service directories with .proto files."
+   },
+   {
+    "key": "C",
+    "text": "Move the conventions to .claude/rules/proto.md with paths: [\"**/*.proto\"] so they load when a .proto file is edited."
+   },
+   {
+    "key": "D",
+    "text": "Add context: fork to /proto-style so it starts in its own sub-agent automatically whenever a .proto file is edited."
+   }
+  ],
+  "answer": [
+   "C"
+  ],
+  "explanation_ru": "Соглашения должны применяться автоматически ко всем файлам одного типа, где бы они ни лежали. Правило в .claude/rules/ с paths: [\"**/*.proto\"] загружается при редактировании любого совпадающего файла, включая файлы новых сервисов, без участия разработчика. Навык загружается по требованию, и даже точное описание оставляет решение о загрузке за Claude.",
+  "why_wrong_ru": {
+   "A": "Описание навыка остаётся подсказкой для решения модели, загрузка по-прежнему не гарантирована, а список директорий устареет с первым новым сервисом.",
+   "B": "18 копий CLAUDE.md придётся синхронизировать, а каждый новый сервис потребует ещё одну.",
+   "D": "context: fork только изолирует выполнение уже вызванного навыка и не запускает его автоматически при правке файлов."
+  },
+  "takeaway_ru": "Соглашение для типа файла должно срабатывать само → .claude/rules/ с glob, а не навык.",
+  "signal_ru": "«Навык ни разу не загрузился» и «файлы в 17 директориях, новые каждый месяц» → загрузка по пути через glob в rules, а не по описанию навыка."
+ }
+]

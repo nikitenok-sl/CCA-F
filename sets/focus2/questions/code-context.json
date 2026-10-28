@@ -1,0 +1,786 @@
+[
+  {
+    "id": "g-claudecode-01",
+    "domain": 3,
+    "task": "3.1",
+    "scenario": 2,
+    "focus": "Claude Code: диагностика и навыки",
+    "targets": [
+      "s3-01"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Twelve developers use Claude Code on the same payments repository and the same commit. Only Priya's sessions add a 14-line license header to every new file and write React class components, although the project CLAUDE.md requires function components and says nothing about headers. When a teammate checked out her branch on his own laptop and repeated her prompts, neither behavior appeared. What should you do first?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add a line at the top of the project CLAUDE.md telling Claude to ignore any instructions that conflict with it."
+      },
+      {
+        "key": "B",
+        "text": "Have Priya delete her clone and re-clone the repository so that her project files exactly match the team's."
+      },
+      {
+        "key": "C",
+        "text": "Run /memory in Priya's session to see which CLAUDE.md and memory files load, then compare with a teammate's."
+      },
+      {
+        "key": "D",
+        "text": "Move the React conventions into a /react-style skill so that every developer invokes the same explicit version."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Поведение воспроизводится только у Priya и только на её машине, при том же коммите и тех же промптах, значит у неё загружается какой-то дополнительный файл памяти, например личный ~/.claude/CLAUDE.md с этими правилами. Команда /memory показывает, какие CLAUDE.md и файлы памяти реально загружены в сессии, поэтому первый шаг это диагностика, а не правка конфигурации. Правка общего файла задевает 11 человек, у которых всё работает, и не убирает лишний источник правил у Priya.",
+    "why_wrong_ru": {
+      "A": "Это правка общего файла вслепую: причина у Priya не выяснена, и её лишний файл памяти продолжит загружаться.",
+      "B": "Коммит у неё тот же, а пользовательские файлы вроде ~/.claude/CLAUDE.md лежат вне клона, переклонирование их не тронет.",
+      "D": "Перенос в skill делает стандарт зависимым от ручного вызова и не убирает источник лишних правил у Priya."
+    },
+    "takeaway_ru": "Странности только у одного человека → сначала /memory в его сессии, потом правки.",
+    "signal_ru": "«Only Priya», тот же коммит, на чужом ноутбуке не воспроизводится: различие в загруженных файлах памяти, а не в проектном CLAUDE.md, поэтому сначала /memory."
+  },
+  {
+    "id": "g-claudecode-02",
+    "domain": 3,
+    "task": "3.1",
+    "scenario": 2,
+    "focus": "Claude Code: диагностика и навыки",
+    "targets": [
+      "s3-01"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "You run two Claude Code sessions on the same commit of your team's API service: one in your everyday clone at ~/work/acme/api, and one in a second clone at ~/scratch/api that you made for a risky experiment. In the scratch session Claude builds SQL with string interpolation and skips the team's audit_log() call; in the everyday clone it never does. Both clones contain identical CLAUDE.md files and identical .claude/rules/ directories. What should you do first?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Run /memory in both sessions and compare the lists of loaded memory files to find the one that differs."
+      },
+      {
+        "key": "B",
+        "text": "Copy the SQL and audit-log rules into the scratch clone's CLAUDE.md, since that is the only session that misbehaves."
+      },
+      {
+        "key": "C",
+        "text": "Run /compact in the scratch session, since its context has probably drifted further than the everyday one's."
+      },
+      {
+        "key": "D",
+        "text": "Restate the SQL and audit-log rules in the first prompt of every new session you start in the scratch clone."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Файлы проекта в обоих клонах одинаковы, значит различие в том, что загружается помимо репозитория. Например, Claude Code загружает CLAUDE.md из рабочей директории и всех директорий выше неё, и файл ~/work/CLAUDE.md действует только на основной клон. /memory в каждой сессии показывает реально загруженные файлы памяти, и сравнение двух списков сразу укажет лишний файл. Если окажется, что правила команды живут вне репозитория, их переносят в проектный CLAUDE.md, но это решение после диагностики.",
+    "why_wrong_ru": {
+      "B": "Это правка вслепую в одном клоне: сначала нужно понять, откуда правила берутся в основном клоне, возможно, их надо закоммитить для всей команды.",
+      "C": "/compact сжимает историю, но не меняет набор загруженных файлов памяти, а разница проявляется с первого запроса.",
+      "D": "Повтор правил в промпте лечит симптом в одной директории и оставляет неизвестным, почему сессии видят разные инструкции."
+    },
+    "takeaway_ru": "Две свои сессии ведут себя по-разному → /memory в обеих и сравни списки файлов.",
+    "signal_ru": "Одинаковые CLAUDE.md и rules в обоих клонах, но разные директории: разница в файлах вне репозитория. Первый шаг это диагностика /memory, а не правка конфигурации."
+  },
+  {
+    "id": "g-claudecode-03",
+    "domain": 3,
+    "task": "3.1",
+    "scenario": 2,
+    "focus": "Claude Code: диагностика и навыки",
+    "targets": [
+      "s3-01"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "You maintain the Claude Code configuration for a 40-package monorepo and triage reports from the team's support channel. For each report below, you decide whether the right first step is to run /memory in the affected session or to apply a known fix directly. For which TWO reports is running /memory the right first step? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "A new hire's sessions skip the lint rules; /memory already shows they live only in the lead's ~/.claude/CLAUDE.md."
+      },
+      {
+        "key": "B",
+        "text": "Sessions started in packages/search/ ignore the standards its CLAUDE.md pulls in via @docs/search-standards.md."
+      },
+      {
+        "key": "C",
+        "text": "The /scan-deps skill leaves 40,000 tokens of lockfile output in each session, and later edits drift from decisions."
+      },
+      {
+        "key": "D",
+        "text": "Test conventions must apply to *.spec.ts files in 20 packages, and new packages with tests appear every month."
+      },
+      {
+        "key": "E",
+        "text": "Three of ten developers get Sentry calls added to every handler, a rule that appears in no committed file."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Каждый отчёт оценивается отдельно: /memory нужен, когда поведение расходится с ожиданием, а причина неизвестна. В B импорт записан, но стандарты не действуют; одна из возможных причин в том, что относительный путь в @path разрешается от файла с импортом, и он указывает на packages/search/docs/, а не на корневой docs/. В E правила нет ни в одном закоммиченном файле, значит его подтягивает чей-то личный файл памяти. В A диагностика уже сделана, а C и D описывают задачи с известным решением.",
+    "why_wrong_ru": {
+      "A": "/memory уже показал причину, повторная диагностика ничего не добавит: правила нужно перенести в проектный CLAUDE.md.",
+      "C": "Причина известна, это объёмный вывод skill в основном контексте, и решение здесь context: fork, а не диагностика памяти.",
+      "D": "Это задача размещения конвенции, а не непонятное поведение: нужен .claude/rules/ с glob в paths."
+    },
+    "takeaway_ru": "/memory нужен, когда причина расхождения неизвестна; если причина уже видна, сразу чини.",
+    "signal_ru": "«Import has no effect» и «rule in no committed file» говорят о неизвестной причине в загруженных файлах. В A причина уже найдена, у C и D есть готовые решения."
+  },
+  {
+    "id": "g-claudecode-04",
+    "domain": 3,
+    "task": "3.3",
+    "scenario": 2,
+    "focus": "Claude Code: диагностика и навыки",
+    "targets": [
+      "s3-01"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "The ledger team keeps its money rules (integer cents, no floats, banker's rounding) in services/ledger/CLAUDE.md, and Claude follows them whenever it edits files there. A developer starts Claude Code at the repository root and asks it to write a new api/openapi/ledger.yaml and a client in web/src/ledger/. The session never reads or edits anything under services/ledger/; Claude uses float amounts, and the ledger rules never load in that session. Most work in the repository never touches money. What is the best fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Mark the rules IMPORTANT at the top of services/ledger/CLAUDE.md so Claude gives them more weight once loaded."
+      },
+      {
+        "key": "B",
+        "text": "Move the money rules into the root CLAUDE.md so that every session in the repository loads them at launch."
+      },
+      {
+        "key": "C",
+        "text": "Ask developers to open a file in services/ledger/ at the start of each session so that the ledger rules load."
+      },
+      {
+        "key": "D",
+        "text": "Move the rules to .claude/rules/money.md with paths globs that match ledger files in all three locations."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "CLAUDE.md в подпапке загружается по требованию, только когда Claude читает, пишет или редактирует файл в этой подпапке, а сессия работала с api/ и web/, поэтому правил не видела. Конвенцию, которая должна действовать в нескольких директориях, кладут в .claude/rules/ с glob в paths: такой файл загружается при Read, Write или Edit совпадающих файлов, включая создание нового ledger.yaml. Корневой CLAUDE.md тоже сработал бы, но грузил бы денежные правила во все сессии, где они не нужны.",
+    "why_wrong_ru": {
+      "A": "Пометка IMPORTANT не помогает, если файл вообще не загружен в сессию.",
+      "B": "Сработает, но грузит правила в каждую сессию, хотя большая часть работы денег не касается; rules с paths дают то же без лишнего контекста.",
+      "C": "Решение держится на дисциплине людей и ломается при первом забытом шаге."
+    },
+    "takeaway_ru": "CLAUDE.md подпапки грузится только при работе с её файлами; кросс-директорную конвенцию клади в rules с paths.",
+    "signal_ru": "Сессия не трогала services/ledger/, правило нужно в трёх директориях, большая часть работы денег не касается: rules с glob, а не корневой CLAUDE.md."
+  },
+  {
+    "id": "g-claudecode-05",
+    "domain": 3,
+    "task": "3.2",
+    "scenario": 2,
+    "focus": "Claude Code: диагностика и навыки",
+    "targets": [
+      "s3-04",
+      "d3-03"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your project skill /triage-flaky investigates a flaky integration test inside the session where a developer is building a feature. It tests six hypotheses in turn, adding temporary sleeps, retry wrappers and debug logging, and reverts each one that fails. Its whole transcript is only about 3,000 tokens. When the developer then asks Claude to fix the confirmed cause, a race in cache warm-up, the fix re-adds a sleep and a retry wrapper from hypotheses the skill had rejected. Which change to the skill best addresses this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep it in the main context, since 3,000 tokens is small, and end the skill by telling Claude to drop rejected hypotheses."
+      },
+      {
+        "key": "B",
+        "text": "Add context: fork to the frontmatter so hypothesis testing runs in an isolated sub-agent and only the conclusion returns."
+      },
+      {
+        "key": "C",
+        "text": "Have developers run the skill in plan mode so Claude only proposes hypotheses and makes no temporary edits while triaging."
+      },
+      {
+        "key": "D",
+        "text": "Have developers run /clear after the skill and paste its conclusion back, so the session keeps only the confirmed cause."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Проблема не в объёме, а в характере контекста: отвергнутые гипотезы и временные правки остаются в основной сессии и подмешиваются в реальный фикс. context: fork изолирует не только объёмный вывод, но и исследовательский контекст skill (перебор гипотез, прототипы, отброшенные варианты), и в сессию возвращается только вывод. Инструкция «забыть» отвергнутое текст из контекста не убирает.",
+    "why_wrong_ru": {
+      "A": "Даже 3 000 токенов отвергнутых гипотез остаются в контексте, а просьба их не учитывать текст не удаляет.",
+      "C": "Без временных правок skill не проверит гипотезы, а plan mode нужен для архитектурных решений, не для изоляции контекста.",
+      "D": "/clear стирает и контекст фичи, над которой идёт работа, и держится на ручной дисциплине."
+    },
+    "takeaway_ru": "context: fork нужен не только против объёма: отброшенные варианты тоже изолируй в форке.",
+    "signal_ru": "Вывод маленький, 3 000 токенов, но фикс повторяет отвергнутые гипотезы: мешает исследовательский контекст, а не объём. /clear стёр бы работу над фичей."
+  },
+  {
+    "id": "g-claudecode-06",
+    "domain": 3,
+    "task": "3.2",
+    "scenario": 2,
+    "focus": "Claude Code: диагностика и навыки",
+    "targets": [
+      "s3-04"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your project skill /design-schema drafts three alternative table layouts for a new feature, each with DDL and trade-offs, then recommends one; developers accept it almost every time and ask Claude, in the same session, to write the migration. Two problems recur. Migrations often include columns from rejected layouts, such as option 2's JSONB metadata column. And the rule that every table has tenant_id and created_at exists only in this SKILL.md, so tables Claude adds outside the skill miss them. Which TWO changes fix these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add context: fork to /design-schema so drafts stay in an isolated sub-agent and only the chosen layout returns."
+      },
+      {
+        "key": "B",
+        "text": "Run /design-schema in plan mode so the three layouts are proposed as a plan instead of being written into the session."
+      },
+      {
+        "key": "C",
+        "text": "Split /design-schema into three skills, one per layout style, so that each invocation drafts only a single alternative."
+      },
+      {
+        "key": "D",
+        "text": "Move the tenant_id and created_at rule from SKILL.md into the project CLAUDE.md so that it applies to every new table."
+      },
+      {
+        "key": "E",
+        "text": "Add allowed-tools: Read, Grep to /design-schema so the skill cannot write migration files while it drafts the layouts."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно. A: колонки из отвергнутых вариантов попадают в миграцию, потому что DDL всех трёх вариантов остаётся в основном контексте; context: fork оставляет черновики в изолированном сабагенте, а в сессию возвращается только рекомендованная схема. D: стандарт, который должен действовать для каждой таблицы, нельзя держать в skill, он применяется только при вызове; его место в постоянно загружаемом проектном CLAUDE.md.",
+    "why_wrong_ru": {
+      "B": "План с тремя вариантами всё равно остаётся в основном контексте, а plan mode нужен для архитектурных многофайловых решений.",
+      "C": "Три вызова оставят в сессии те же три черновика, и стандарт по-прежнему живёт только внутри skill.",
+      "E": "allowed-tools касается инструментов, а утечка идёт через текст в контексте, а не через файлы."
+    },
+    "takeaway_ru": "Черновики вариантов → context: fork; стандарт для всех случаев → CLAUDE.md, а не skill.",
+    "signal_ru": "Два симптома: колонки из отвергнутых вариантов (исследовательский контекст, значит fork) и стандарт только в SKILL.md (должен грузиться всегда, значит CLAUDE.md)."
+  },
+  {
+    "id": "g-iteration-01",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 2,
+    "focus": "Примеры вместо прозы",
+    "targets": [
+      "s3-08"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer is using Claude Code to build a codemod that rewrites callback-style database calls in a legacy service to async/await. She described the transformation in two paragraphs of prose and knows exactly what each rewritten call should look like. Yet the output varies between runs: error-first callbacks become try/catch in one run and a .catch() chain in the next, and nested callbacks are sometimes flattened and sometimes kept nested. What is the most effective next step?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Write a full test suite for the codemod first, covering every callback shape in the service, then share the failures."
+      },
+      {
+        "key": "B",
+        "text": "Report each inconsistency in its own message, starting with error handling, and move on once that one is stable."
+      },
+      {
+        "key": "C",
+        "text": "Give Claude two or three real callback calls, each paired with the exact async/await code she expects for it."
+      },
+      {
+        "key": "D",
+        "text": "Ask Claude to restate the specification in its own words and confirm its reading before it rewrites the codemod."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Нужный результат известен, а проза трактуется по-разному: это ровно случай для 2–3 конкретных пар вход/выход, они снимают двусмысленность сразу в обоих местах. Test-driven iteration нужна, когда много граничных случаев и есть требования к производительности, а здесь два известных шаблона. Пересказ спецификации своими словами не снимает двусмысленность: модель может верно пересказать текст и всё равно применять его по-разному.",
+    "why_wrong_ru": {
+      "A": "Полный набор тестов оправдан при множестве edge cases и лимитах производительности, а двусмысленность двух шаблонов быстрее снимают примеры.",
+      "B": "Сообщения по очереди всё равно остаются прозой, которую модель уже трактует непоследовательно.",
+      "D": "Пересказ проверяет понимание текста, но не показывает конкретный нужный результат, и двусмысленность остаётся."
+    },
+    "takeaway_ru": "Знаешь нужный результат, а прозу понимают по-разному → 2–3 пары вход/выход.",
+    "signal_ru": "«Knows exactly what each rewritten call should look like» и разные трактовки прозы: примеры. Нет множества edge cases и лимита производительности, значит не тесты первыми."
+  },
+  {
+    "id": "g-iteration-02",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 2,
+    "focus": "Примеры вместо прозы",
+    "targets": [
+      "s3-08"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "A developer must add offline editing to a mobile notes app: edits made offline have to sync when the device reconnects. She has never built sync before, and product has not decided what should happen when the same note is edited on two devices. Her first attempt, asking Claude Code to \"add offline sync to NoteStore,\" silently kept the last write and lost a tester's edits in QA. What should she do before the next attempt?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Write two or three example edit sequences with the exact merged note she wants, and give them to Claude."
+      },
+      {
+        "key": "B",
+        "text": "Write a test suite first that covers concurrent edits and reconnect order, then iterate on the failing tests."
+      },
+      {
+        "key": "C",
+        "text": "Ask Claude to implement the most common conflict-resolution pattern for notes, then fix what QA reports."
+      },
+      {
+        "key": "D",
+        "text": "Ask Claude to interview her about conflict rules, edit ordering, and failure modes before writing code."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Требования неизвестны: правило для конфликтов ещё не принято, а область для разработчицы новая. Interview pattern заставляет Claude до написания кода задать вопросы, которые она могла не предусмотреть: правила конфликтов, порядок применения правок, поведение при сбоях. Пары вход/выход и тесты первыми работают, только когда ожидаемый результат уже известен, а здесь его пришлось бы выдумать.",
+    "why_wrong_ru": {
+      "A": "Чтобы записать ожидаемый результат слияния, нужно уже знать правило конфликтов, а его ещё не решили.",
+      "B": "Тестам тоже нужен ожидаемый результат; без решённых правил тесты зафиксируют догадку.",
+      "C": "Типовой паттерн без выяснения требований как раз и привёл к потере правок в первой попытке."
+    },
+    "takeaway_ru": "Нужный результат неизвестен или область незнакома → сначала интервью, примеры и тесты потом.",
+    "signal_ru": "«Never built sync» и «product has not decided»: ожидаемого результата пока нет, поэтому интервью. Примеры и тесты требуют уже известного ответа."
+  },
+  {
+    "id": "g-iteration-03",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 2,
+    "focus": "Примеры вместо прозы",
+    "targets": [
+      "s3-08"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "You are building parse_duration() for a scheduling service. After prose descriptions failed, three input/output pairs resolved the format ambiguity. Now QA has listed 20 edge cases (negative values, \"1h90m\", unit-less numbers, overflow), and the function must parse 50,000 strings in under 5 ms. Each correction you send fixes one edge case and breaks another, and one version matched every example but took 40 ms. What is the most effective next step?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Write tests for the 20 edge cases and the 5 ms limit before the next attempt, then share each failing test."
+      },
+      {
+        "key": "B",
+        "text": "Add about fifteen more input/output pairs to the prompt, one for each of the edge cases that QA has reported."
+      },
+      {
+        "key": "C",
+        "text": "Ask Claude to interview you about duration formats before it attempts another version of parse_duration()."
+      },
+      {
+        "key": "D",
+        "text": "Send all 20 edge cases in one detailed prose message and ask Claude to handle every one in a single attempt."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Двусмысленность формата уже снята примерами, теперь задача другая: много граничных случаев плюс требование к производительности, и правки ломают друг друга. Test-driven iteration: сначала тесты на ожидаемое поведение, edge cases и лимит 5 ms, затем итерации по конкретным падениям, так откаты уже исправленного видны сразу. Ещё пятнадцать примеров в промпте не проверяют скорость и не ловят регрессии.",
+    "why_wrong_ru": {
+      "B": "Примеры задают формат, но не проверяют производительность и не показывают, какой случай сломался после новой правки.",
+      "C": "Требования уже известны, QA перечислил случаи; интервью нужно, когда неясно, что именно строить.",
+      "D": "Одно длинное сообщение в прозе не даёт проверяемого критерия, и следующая правка снова может откатить прошлые."
+    },
+    "takeaway_ru": "Много edge cases плюс лимит производительности → тесты первыми, итерации по падениям.",
+    "signal_ru": "20 перечисленных edge cases, лимит 5 ms и «fixes one, breaks another»: нужна проверяемая обратная связь тестами. Формат уже снят примерами, новые пары не помогут."
+  },
+  {
+    "id": "g-iteration-04",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 2,
+    "focus": "Примеры вместо прозы",
+    "targets": [
+      "s3-08",
+      "d3-10"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "You are iterating with Claude Code on generate_statement(), which renders monthly account statements. Two problems remain. First, header dates and masked account numbers come out in a different format almost every run, although you know exactly how the header must look. Second, the late fee is computed on the balance after the interest step, and the interest step reads the late fee, so changing either calculation shifts the other. Which TWO steps should you take? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Fix the late fee in one message and verify it, then send the interest problem in a follow-up so each change stays isolated."
+      },
+      {
+        "key": "B",
+        "text": "Ask Claude to interview you about statement layout and fee policy before it changes any part of generate_statement()."
+      },
+      {
+        "key": "C",
+        "text": "Give Claude two or three sample headers, each pairing the raw account data with the exact header text you expect."
+      },
+      {
+        "key": "D",
+        "text": "Switch to plan mode and have Claude redesign the statement pipeline before it touches the header or the fee logic."
+      },
+      {
+        "key": "E",
+        "text": "Describe the late-fee and interest problems together in one message, with a sample account and its expected totals."
+      }
+    ],
+    "answer": [
+      "C",
+      "E"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно. C подходит, потому что формат шапки известен, а модель трактует его по-разному, значит нужны 2–3 пары вход/выход. E подходит, потому что пеня и проценты зависят друг от друга: взаимосвязанные проблемы описывают одним подробным сообщением с примером счёта и ожидаемыми суммами, иначе раздельные правки будут отменять друг друга. Шапка от расчётов не зависит, её можно чинить отдельно.",
+    "why_wrong_ru": {
+      "A": "Последовательные правки годятся для независимых проблем, а здесь пеня и проценты меняют друг друга.",
+      "B": "Интервью нужно при неизвестных требованиях, а здесь нужный результат известен.",
+      "D": "Две локальные проблемы не требуют перепроектирования, и plan mode не снимает двусмысленность формата."
+    },
+    "takeaway_ru": "Известный формат → примеры; взаимосвязанные баги → одно сообщение; независимые → по очереди.",
+    "signal_ru": "«Know exactly how the header must look» значит пары вход/выход; «changing either calculation shifts the other» значит одно общее сообщение, а не правки по очереди."
+  },
+  {
+    "id": "g-history-01",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 1,
+    "focus": "Стратегия истории диалога",
+    "targets": [
+      "s5-01"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your support agent's address-change and delivery-status chats average 6 turns and never exceed 12, so their full transcripts fit easily in the token budget. To save tokens, the team applied the billing-dispute strategy to every flow: from turn 4 on, older turns are replaced by a running summary plus a case-facts block. In address-change chats the agent now asks again which of two saved addresses the customer meant and repeats a suggestion the customer declined in turn 3. What should you change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add the chosen address and every declined suggestion to the case-facts block so the summary no longer carries them."
+      },
+      {
+        "key": "B",
+        "text": "Send the full conversation history for these short flows, and keep summary plus facts for long billing disputes."
+      },
+      {
+        "key": "C",
+        "text": "Replace the summary with a sliding window of the last 3 turns so that the newest details always stay verbatim."
+      },
+      {
+        "key": "D",
+        "text": "Tell the summarizer to keep every customer choice and declined suggestion word for word when it condenses turns."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Короткие диалоги целиком помещаются в бюджет токенов, поэтому для них правильная стратегия это полная история в каждом запросе: она сохраняет связность без потерь. Сводка и блок фактов нужны длинным спорам, где история не помещается. Расширять блок фактов под каждый разговорный нюанс значит превращать его в копию истории, которая и так влезает.",
+    "why_wrong_ru": {
+      "A": "Блок фактов предназначен для транзакционных данных, и переносить в него разговорные детали незачем, когда полная история помещается.",
+      "C": "Окно из трёх ходов отбрасывает как раз ходы, где клиент выбрал адрес и отклонил предложение.",
+      "D": "Сводка по природе сжимает детали, а для 6 ходов сжатие вообще не нужно."
+    },
+    "takeaway_ru": "Короткий диалог помещается в бюджет → передавай полную историю, без сводки.",
+    "signal_ru": "6 ходов, максимум 12, «fit easily in the token budget»: сжатие не нужно, нужна полная история. Стратегия длинных споров здесь только теряет детали."
+  },
+  {
+    "id": "g-history-02",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 1,
+    "focus": "Стратегия истории диалога",
+    "targets": [
+      "s5-01"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your support agent's billing-dispute sessions run 40 to 70 turns. To save tokens, each request now carries only a case-facts block (account ID, disputed amount, order numbers, promised callback date) plus the customer's latest message. Audits show the facts are always correct, but the agent re-offers a credit the customer refused 20 turns earlier, repeats troubleshooting steps already done, and misreads \"that one\" as the first charge when the customer meant the second. What is the most effective fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add each refused offer and completed step to the facts block, so that the block alone carries the full state of the case."
+      },
+      {
+        "key": "B",
+        "text": "Send a sliding window of the last 15 turns along with the facts block, so recent references stay verbatim in context."
+      },
+      {
+        "key": "C",
+        "text": "Move the facts block to the end of each prompt, right before the latest message, where the model attends most reliably."
+      },
+      {
+        "key": "D",
+        "text": "Keep the facts block and add a running summary of older turns plus the most recent turns verbatim in each request."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Блок фактов сохраняет суммы, ID и даты, но сам по себе не даёт связности диалога: модель не видит, что уже предлагалось, что сделано и к чему относятся отсылки. Для длинных диалогов нужна комбинация: сводка старых ходов, свежие ходы дословно и постоянный блок case facts вне сводки. Окно в 15 ходов отрежет отказ, сделанный 20 ходов назад.",
+    "why_wrong_ru": {
+      "A": "Если сгружать в блок фактов ход разговора, он превращается в неструктурированную сводку и всё равно не передаёт смысл реплик.",
+      "B": "Окно любой ширины рано или поздно отбрасывает ранние ходы, а отказ был 20 ходов назад, за пределами 15.",
+      "C": "Факты и так верные, позиция блока не поможет: не хватает самой истории разговора."
+    },
+    "takeaway_ru": "Блок фактов не заменяет историю: длинный диалог = сводка + свежие ходы + факты.",
+    "signal_ru": "«Facts are always correct», но повторы и потерянные отсылки: не хватает истории, а не фактов. Отказ «20 turns earlier» исключает окно в 15 ходов."
+  },
+  {
+    "id": "g-history-03",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 1,
+    "focus": "Стратегия истории диалога",
+    "targets": [
+      "s5-01"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "A typical session with your support agent covers three issues across about 50 turns: a damaged-item return, a duplicate charge, and an address change. Older turns are summarized, and one flat case-facts block collects amounts, dates and order numbers in the order they come up. The values in the block are correct, but the agent tells customers their \"refund is approved\" when only the return was approved, and quotes the return's 14-day deadline for the charge dispute. What change best addresses this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Split each multi-issue session into separate conversations, one per issue, and transfer the customer between them."
+      },
+      {
+        "key": "B",
+        "text": "Ask the summarizer to tag every sentence with the issue it concerns, so that the summary keeps the issues apart."
+      },
+      {
+        "key": "C",
+        "text": "Keep a structured record per issue (type, order ID, amount, status, deadline) in a layer outside the summary."
+      },
+      {
+        "key": "D",
+        "text": "Move to a model with a larger context window and stop summarizing, so that every turn stays available verbatim."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Значения в блоке верны, но плоский список не говорит, к какому вопросу относится каждое значение и какой у него статус, поэтому агент смешивает вопросы. Для сессий с несколькими вопросами структурированные данные по каждому вопросу (ID заказа, сумма, статус) выносят в отдельный слой контекста вне сводки. Пометки внутри сводки остаются прозой, которую следующее сжатие снова размывает.",
+    "why_wrong_ru": {
+      "A": "Разрыв сессии ломает опыт клиента и связь между вопросами, а структуру контекста не исправляет.",
+      "B": "Пометки в сводке остаются прозой, которую следующее сжатие снова размывает; статусы и сроки нужны в структуре вне сводки.",
+      "D": "Большое окно не привязывает факты к вопросам, а длинный вход добавляет эффект lost in the middle."
+    },
+    "takeaway_ru": "Несколько вопросов в одной сессии → отдельная структурированная запись на каждый вопрос вне сводки.",
+    "signal_ru": "«Values are correct», но статусы и сроки переносятся между вопросами: не хватает привязки фактов к вопросу. Плоский блок уже есть, нужна структура по вопросам."
+  },
+  {
+    "id": "g-history-04",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 1,
+    "focus": "Стратегия истории диалога",
+    "targets": [
+      "s5-01"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "You are writing the context-strategy table for your support agent's five conversation flows. The token budget fits about 25 turns of verbatim history plus tool results. Each option below pairs one flow, with its typical length, and the strategy an engineer proposed for it. Which TWO pairings are correct? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Password resets, 4 to 7 turns: send the complete conversation history verbatim in every request."
+      },
+      {
+        "key": "B",
+        "text": "Warranty claims, 35 to 60 turns: send a sliding window of the last 25 turns, the most the budget allows."
+      },
+      {
+        "key": "C",
+        "text": "Chargeback disputes, 40 to 80 turns: send only a case-facts block plus the customer's latest message."
+      },
+      {
+        "key": "D",
+        "text": "Refund escalations, 30 to 50 turns: summarize older turns and keep amounts, IDs and dates in a facts block."
+      },
+      {
+        "key": "E",
+        "text": "Plan upgrades, 10 to 14 turns: summarize every turn after the fifth so the requests stay as small as possible."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Каждая пара оценивается отдельно. A верна: короткий диалог целиком помещается в бюджет, и полная история сохраняет всё. D верна: длинный диалог не помещается, поэтому старые ходы суммаризируют, а суммы, ID и даты держат в постоянном блоке фактов вне сводки. E ошибочна, хотя тоже про короткий диалог: 10–14 ходов помещаются в бюджет 25 ходов, и сжатие только теряет детали.",
+    "why_wrong_ru": {
+      "B": "Окно в 25 ходов при 35–60 ходах отбрасывает начало, где клиент назвал товар, дату покупки и суть претензии.",
+      "C": "Блок фактов без истории теряет связность: агент не знает, что уже обсуждалось и предлагалось.",
+      "E": "10–14 ходов помещаются в бюджет, и суммаризация здесь теряет детали без всякой нужды в экономии."
+    },
+    "takeaway_ru": "Влезает в бюджет → полная история; не влезает → сводка плюс блок фактов.",
+    "signal_ru": "Сравнивай длину диалога с бюджетом 25 ходов: короче бюджета полная история, длиннее сводка с фактами. Окно и факты без истории не годятся ни для какой длины."
+  },
+  {
+    "id": "g-sampling-01",
+    "domain": 5,
+    "task": "5.5",
+    "scenario": 6,
+    "focus": "Аудит и метрики точности",
+    "targets": [
+      "s5-10"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your pipeline extracts fields from insurance claim forms and auto-approves extractions with calibrated confidence of 0.92 or higher, about 88% of volume. Reviewers check the remaining 12% and correct 9% of them. The claims director asks how often auto-approved extractions are wrong, and nobody can say, because no one ever looks at them. Forms come from 40 brokers in five form types, two of which are under 3% of volume each. What should you implement?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Each week, send 1% of all auto-approved extractions, drawn by plain random selection, to the reviewers."
+      },
+      {
+        "key": "B",
+        "text": "Each week, send reviewers a random sample of auto-approved extractions, stratified by broker and form type."
+      },
+      {
+        "key": "C",
+        "text": "Each week, send reviewers the auto-approved extractions scored 0.92 to 0.94, those closest to the threshold."
+      },
+      {
+        "key": "D",
+        "text": "Estimate the auto-approved error rate from the 9% correction rate in the review queue, scaled by confidence."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Ошибки среди уверенных извлечений нельзя оценить, не глядя на них, поэтому нужна стратифицированная случайная выборка high-confidence извлечений: она измеряет реальный уровень ошибок и ловит новые паттерны. Стратификация по брокерам и типам форм гарантирует, что малые сегменты (формы с долей меньше 3%) попадут в выборку и получат свою оценку. Простая случайная выборка почти не видит малые сегменты, а выборка у порога не случайна и пропускает уверенные ошибки.",
+    "why_wrong_ru": {
+      "A": "Без стратификации редкие типы форм и мелкие брокеры почти не попадают в 1%, и ошибки в них не измеряются.",
+      "C": "Выборка у порога не случайна: уверенные ошибки нового шаблона с баллом 0.99 в неё не попадут.",
+      "D": "Доля исправлений в очереди с низкой уверенностью ничего не говорит об ошибках в уверенной части потока."
+    },
+    "takeaway_ru": "Уровень ошибок уверенных извлечений → стратифицированная случайная выборка по сегментам.",
+    "signal_ru": "«No one ever looks» за 88% потока и сегменты меньше 3%: нужна случайная выборка уверенных извлечений со стратами, а не выборка у порога и не экстраполяция."
+  },
+  {
+    "id": "g-sampling-02",
+    "domain": 5,
+    "task": "5.5",
+    "scenario": 6,
+    "focus": "Аудит и метрики точности",
+    "targets": [
+      "s5-10",
+      "d5-08"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Before cutting human review of high-confidence extractions, you measured accuracy on a 3,000-document labeled set: 96.8% overall against a 95% target. By segment: typed purchase orders 98.9% (71% of volume), emailed PDF quotes 97.4% (21%), handwritten delivery notes 81.3% (6%), and multi-page customs forms 88.0% (2%), where the incoterms field is right only 64% of the time. The operations lead wants to auto-approve everything above the calibrated threshold. What should you do?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Auto-approve only high-confidence orders and quotes; keep delivery notes and customs forms with reviewers."
+      },
+      {
+        "key": "B",
+        "text": "Auto-approve every document type, since 96.8% overall accuracy is already above the pipeline's 95% target."
+      },
+      {
+        "key": "C",
+        "text": "Auto-approve every type, but raise the shared threshold until overall accuracy on the labeled set hits 98%."
+      },
+      {
+        "key": "D",
+        "text": "Keep full human review for every document type until overall accuracy on the labeled set reaches 99%."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Общие 96.8% скрывают, что рукописные накладные (81.3%) и таможенные формы (88.0%, поле incoterms 64%) далеко ниже цели. Сокращать ревью можно только там, где сегмент сам по себе стабильно выше цели, поэтому автоматизируют заказы и котировки, а слабые сегменты оставляют людям, пока их точность не поднимут. Ждать общих 99% значит не автоматизировать даже готовые сегменты.",
+    "why_wrong_ru": {
+      "B": "Общая цифра держится на 92% объёма в сильных сегментах и маскирует слабые типы документов.",
+      "C": "Единый поднятый порог подбирается по общей метрике, не гарантирует точности в каждом сегменте и зря отнимает автоматизацию у сильных.",
+      "D": "Цель по общей цифре снова игнорирует сегменты и держит на ручной проверке то, что уже готово к автоматизации."
+    },
+    "takeaway_ru": "Автоматизируй по сегментам: только типы документов и поля, которые сами выше цели.",
+    "signal_ru": "Общие 96.8% выше цели, но два сегмента и поле incoterms сильно ниже: решение принимают по сегментам, а не по общей цифре и не единым порогом."
+  },
+  {
+    "id": "g-sampling-03",
+    "domain": 5,
+    "task": "5.5",
+    "scenario": 6,
+    "focus": "Аудит и метрики точности",
+    "targets": [
+      "s5-10"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your extraction pipeline routes fields scored below 0.85 to human review. That threshold was calibrated three months ago on a 2,000-document labeled set, where 0.85 corresponded to 97% field accuracy. You have just upgraded to a newer model version, and its scores run higher: 93% of fields now score above 0.85, versus 81% before. A few spot checks suggest accuracy is similar to before. What should you do before routing production traffic through the new model?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep the 0.85 threshold, because it was calibrated on the labeled set and spot checks show similar accuracy."
+      },
+      {
+        "key": "B",
+        "text": "Raise the threshold until the new model again sends 19% of fields to review, as the previous model did."
+      },
+      {
+        "key": "C",
+        "text": "Have the new model score each field twice and route any field whose two confidence scores disagree."
+      },
+      {
+        "key": "D",
+        "text": "Run the new model on the labeled set and recalibrate per-field thresholds from accuracy in each score band."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Калибровка связывает баллы конкретной модели с реальной точностью; у новой модели другое распределение баллов, и 0.85 у неё может означать другую точность. Пороги калибруют на размеченном наборе, поэтому новую модель прогоняют на том же наборе и выбирают пороги по фактической точности в каждом диапазоне баллов, по полям. Подгонка порога под прежнюю долю ревью опирается на объём очереди, а не на точность.",
+    "why_wrong_ru": {
+      "A": "Калибровка относилась к баллам старой модели, а точечные проверки не измеряют точность в каждом диапазоне баллов.",
+      "B": "Порог, подобранный под прежний объём ревью, привязан к нагрузке, а не к измеренной точности.",
+      "C": "Согласие двух самооценок не показывает реальную точность, это та же некалиброванная самооценка дважды."
+    },
+    "takeaway_ru": "Сменилась модель или промпт → заново откалибруй пороги на размеченном наборе.",
+    "signal_ru": "«Scores run higher» после смены модели: старая калибровка не переносится, а «spot checks» не заменяют таблицу точности по диапазонам баллов на размеченных данных."
+  },
+  {
+    "id": "g-sampling-04",
+    "domain": 5,
+    "task": "5.5",
+    "scenario": 6,
+    "focus": "Аудит и метрики точности",
+    "targets": [
+      "s5-10"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your lease-abstraction pipeline auto-approves extractions whose calibrated field confidence is 0.90 or higher, and your two reviewers can handle about 60 documents a day. A weekly stratified random sample of auto-approved leases already feeds your error-rate tracking. Reviewer capacity is tight, so today's queue should hold only documents that genuinely need a person. Which TWO of today's documents should be routed to human review? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "A standard 12-page lease from a known landlord; every field scored 0.96 or higher and all dates are consistent."
+      },
+      {
+        "key": "B",
+        "text": "A lease whose rent is $4,200 in the summary table but $4,800 in clause 7; the model output $4,200 at 0.97."
+      },
+      {
+        "key": "C",
+        "text": "A lease 40 pages longer than usual because of attached floor plans; every extracted field scored above 0.93."
+      },
+      {
+        "key": "D",
+        "text": "A lease on a new landlord's template; all fields scored 0.95, and this week's sample already holds 3 of them."
+      },
+      {
+        "key": "E",
+        "text": "A sublease whose termination_date scored 0.71 because the date appears only in a handwritten margin note."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Каждый документ оценивается отдельно по правилам маршрутизации: к людям идут извлечения с низкой уверенностью и документы с противоречивыми или неоднозначными данными в источнике. B подходит: документ противоречит сам себе (две разные суммы аренды), и высокий балл этого не отменяет, модель просто уверенно выбрала одно из значений. E подходит: поле ниже откалиброванного порога. D уже покрыт стратифицированной выборкой, которая и нужна для новых шаблонов.",
+    "why_wrong_ru": {
+      "A": "Все поля выше порога и согласованы между собой, это ровно тот случай, который можно доверить автоматике.",
+      "C": "Объём документа не критерий маршрутизации, а все извлечённые поля выше порога.",
+      "D": "Новые шаблоны отслеживает стратифицированная выборка, и такие документы в ней уже есть; полная проверка каждого съест ёмкость ревьюеров."
+    },
+    "takeaway_ru": "К людям: низкая уверенность или противоречивый источник, даже при высоком балле.",
+    "signal_ru": "$4,200 против $4,800 это противоречие в источнике, высокий балл его не отменяет; 0.71 ниже порога. Новый шаблон уже покрыт выборкой."
+  }
+]

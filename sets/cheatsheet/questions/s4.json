@@ -1,0 +1,468 @@
+[
+  {
+    "id": "s4-01",
+    "domain": 4,
+    "task": "4.1",
+    "scenario": 5,
+    "sheet": "Explicit Criteria Pattern",
+    "type": "single",
+    "select": 1,
+    "stem": "You are replacing your CI reviewer's instruction \"Flag inaccurate or outdated comments\" with explicit flag/skip criteria, and you build a small test set to confirm the new criteria behave as intended before rollout. Under a precise definition of an inaccurate comment, which of these four comments from one pull request should produce a finding?",
+    "options": [
+      {
+        "key": "A",
+        "text": "`// TODO: add rate limiting` above a request handler that has no rate limiting implemented yet."
+      },
+      {
+        "key": "B",
+        "text": "`// FIXME: cache key ignores locale` above a cache key that has included locale since last month's fix."
+      },
+      {
+        "key": "C",
+        "text": "`// Wraps the legacy v1 billing client` above code that still calls it, though the team now says \"classic\"."
+      },
+      {
+        "key": "D",
+        "text": "`// Validates the payload` above a function that does validate it but does not list each individual check."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Явный критерий: флаговать комментарий, только если он противоречит реальному поведению кода, ссылается на несуществующий символ или TODO/FIXME описывает уже исправленный баг. В варианте B FIXME утверждает, что баг есть, а код его уже исправил, поэтому комментарий вводит в заблуждение. Остальные комментарии верны по сути, они лишь неполные или стилистически устаревшие.",
+    "why_wrong_ru": {
+      "A": "TODO описывает ещё не сделанную работу, а неполная реализация не равна неточному комментарию.",
+      "C": "Название устарело стилистически, но поведение описано верно, такие комментарии относятся к списку Do NOT flag.",
+      "D": "Комментарий краткий, но не противоречит коду, неполнота описания не делает его неточным."
+    },
+    "takeaway_ru": "Флагуй комментарий, только если он противоречит коду: неполный не значит неточный."
+  },
+  {
+    "id": "s4-02",
+    "domain": 4,
+    "task": "4.2",
+    "scenario": 5,
+    "sheet": "Few-Shot — What It Teaches",
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI review prompt contains three few-shot examples. Each shows a code snippet with a real bug, a short reasoning paragraph, and the finding in your team's format. After rollout, the reviewer reports at least one finding on 94% of changed files, including files that senior engineers verified as correct, and many findings read like \"this could potentially fail if…\". What is the most effective change to the examples?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add five more examples covering other bug classes, so the model sees a broader range of genuine issues."
+      },
+      {
+        "key": "B",
+        "text": "Append \"Only report findings you are highly confident are real bugs\" to each example's reasoning."
+      },
+      {
+        "key": "C",
+        "text": "Remove the reasoning paragraphs so each example shows only the snippet and its resulting finding."
+      },
+      {
+        "key": "D",
+        "text": "Replace one example with correct code resembling a common false positive, reasoned to \"no finding\"."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Few-shot учит трём вещам сразу: формату, рассуждению, которое оправдывает находку, и тому, когда находку НЕ выдавать. Если все примеры заканчиваются находкой, модель усваивает, что находка нужна всегда, и флагует даже корректный код. Пример «no finding» с рассуждением на фрагменте, похожем на типичное ложное срабатывание, закрывает именно этот failure mode и не выводит набор за пределы 2–4 примеров.",
+    "why_wrong_ru": {
+      "A": "Ещё больше положительных примеров усиливает перекос: модель ещё твёрже считает, что в каждом фрагменте есть баг.",
+      "B": "Расплывчатая просьба о высокой уверенности не задаёт критерия и не показывает, как выглядит отсутствие находки.",
+      "C": "Рассуждение в примерах как раз учит, что оправдывает находку, и его удаление ухудшает суждение модели."
+    },
+    "takeaway_ru": "В few-shot обязателен пример «no finding», иначе модель флагует всё подряд."
+  },
+  {
+    "id": "s4-03",
+    "domain": 4,
+    "task": "4.2",
+    "scenario": 5,
+    "sheet": "Common Exam Traps Quick Reference",
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI reviewer's system prompt has a 900-word section defining the finding format: file and line range, issue, severity (critical/high/medium/low), and a concrete suggested fix. An audit of 400 findings shows that 31% omit the line range, severity appears as \"major\", \"P2\", or \"High\", and suggested fixes range from diffs to \"consider refactoring\". Last sprint the section was doubled in length, with no measurable change. What should you do next?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add 2–4 complete example findings in the exact format, with concrete fixes, and trim the prose."
+      },
+      {
+        "key": "B",
+        "text": "Rewrite the format section using MUST and NEVER in capitals, and repeat it at the end of the prompt."
+      },
+      {
+        "key": "C",
+        "text": "Add a second Claude pass that rewrites every finding into the required format before it is posted."
+      },
+      {
+        "key": "D",
+        "text": "Raise max_tokens so the reviewer has enough room to write every required part of each finding."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Когда подробные инструкции уже не дают единообразия, удлинение того же текста не помогает: несогласованный формат это задача для few-shot, а не для длины инструкций. 2–4 примера готовых находок показывают точный формат, шкалу severity и то, как выглядит конкретный fix, и модель следует образцу. Это самый эффективный приём для единообразного и actionable вывода.",
+    "why_wrong_ru": {
+      "B": "Капс и повторы остаются той же прозаической инструкцией, которая уже дважды не сработала.",
+      "C": "Второй проход добавляет стоимость и задержку и не создаст конкретный fix, которого нет в исходной находке.",
+      "D": "Проблема в несогласованном формате, а не в обрезанных ответах, поэтому max_tokens на неё не влияет."
+    },
+    "takeaway_ru": "Несогласованный формат лечится few-shot примерами, а не более длинной инструкцией."
+  },
+  {
+    "id": "s4-04",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 6,
+    "sheet": "JSON Schema — Additional Patterns",
+    "type": "single",
+    "select": 1,
+    "stem": "Your invoice extraction tool returns schema-valid JSON for every document. In its schema, `invoice_date` is described as \"Date on the invoice\" and `due_date` as \"Relevant payment date\". Finance reports that on 9% of invoices the two values are swapped, mostly on layouts that print both dates side by side in the header under short labels such as \"Dated\" and \"Pay by\". What is the most effective first fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Mark both fields as required so the model must commit to a value for each date on every invoice."
+      },
+      {
+        "key": "B",
+        "text": "Merge both fields into a `dates` array so the model can return every date without having to choose."
+      },
+      {
+        "key": "C",
+        "text": "Rewrite each description as what it IS and IS NOT, e.g. \"Date payment is due, NOT issue date\"."
+      },
+      {
+        "key": "D",
+        "text": "Force the extraction tool by name in tool_choice so the model always uses the invoice extraction schema."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Схема уже соблюдается, ошибка семантическая: модель не понимает, какая дата относится к какому полю. Описание поля работает как инструкция, и для похожих полей нужна явная граница IS / IS NOT: due_date это дата оплаты, а не дата выставления, invoice_date наоборот. Это самая дешёвая правка, которая бьёт прямо в первопричину.",
+    "why_wrong_ru": {
+      "A": "Required заставляет заполнить поле, но не объясняет, какая дата куда, и провоцирует выдумку, когда даты нет.",
+      "B": "Массив без ролей теряет информацию о том, какая дата является сроком оплаты, и переносит проблему дальше по пайплайну.",
+      "D": "Forced tool гарантирует вызов нужного инструмента, но он и так вызывается, а путаница значений остаётся."
+    },
+    "takeaway_ru": "Похожие поля разводи описаниями IS и IS NOT, а не изменением структуры схемы."
+  },
+  {
+    "id": "s4-05",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 6,
+    "sheet": "JSON Schema — Additional Patterns",
+    "type": "single",
+    "select": 1,
+    "stem": "Your contract extraction schema defines `termination_date` as `[\"string\", \"null\"]`, omits it from `required`, and describes it as \"Termination date in YYYY-MM-DD.\" On a labeled set of 300 contracts that contain no termination date, the model still returns a date for 22% of them, typically the effective date plus one year or a renewal date mentioned elsewhere. Which change most directly addresses this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Extend the description: \"Return null if no termination date is stated; do not estimate or infer one.\""
+      },
+      {
+        "key": "B",
+        "text": "Add a Pydantic check of the YYYY-MM-DD format and retry with the specific error message whenever it fails."
+      },
+      {
+        "key": "C",
+        "text": "Make the field required and add a separate boolean `termination_date_present` for the absent cases."
+      },
+      {
+        "key": "D",
+        "text": "Add a per-field confidence score and discard any termination_date whose score is below 0.8."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Сделать поле nullable необходимо, но недостаточно: описание поля работает как инструкция, и без явного запрета модель выводит дату из других условий договора. Описание должно прямо говорить, что при отсутствии данных нужно вернуть null и не оценивать и не выводить значение. Это напрямую устраняет причину фабрикации.",
+    "why_wrong_ru": {
+      "B": "Выдуманные даты имеют корректный формат, поэтому проверка формата их не поймает и retry не запустится.",
+      "C": "Required снова заставляет модель заполнить поле, а флаг рядом не мешает ей сочинить дату.",
+      "D": "Самооценка уверенности не откалибрована, и модель вполне может быть уверена в выведенной дате."
+    },
+    "takeaway_ru": "Nullable-поле плюс описание «верни null, не оценивай» убирают выдуманные значения."
+  },
+  {
+    "id": "s4-06",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 6,
+    "sheet": "JSON Schema — Additional Patterns",
+    "type": "single",
+    "select": 1,
+    "stem": "You are designing the schema for a supplier-document extraction tool. A teammate proposes making `vendor_name` an enum of the 340 vendors in your ERP to prevent spelling variants, and leaving `document_type` as a free-form string because new document types appear every quarter. Downstream code matches vendor names against the ERP master list. Which design should you choose?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Make both fields enums, adding \"other\" to each, so every value is predictable for downstream code."
+      },
+      {
+        "key": "B",
+        "text": "Keep the proposal, but add \"unknown\" to the vendor enum for suppliers missing from the ERP list."
+      },
+      {
+        "key": "C",
+        "text": "Make both fields free-form strings and add normalization rules to the prompt to reduce variants."
+      },
+      {
+        "key": "D",
+        "text": "Make `document_type` an enum with \"other\" + a detail field, and `vendor_name` a nullable string."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Enum подходит для категорий, которые определяете вы сами: document_type с \"other\" и полем detail остаётся расширяемым. vendor_name это значение, извлекаемое из документа, и его нельзя загонять в enum: нового поставщика модель подгонит под похожее значение или потеряет. Его возвращают как [\"string\", \"null\"], а сопоставление с ERP делает код.",
+    "why_wrong_ru": {
+      "A": "Enum с \"other\" для vendor_name теряет реальное имя нового поставщика, и сопоставлять становится нечего.",
+      "B": "\"unknown\" тоже стирает имя поставщика, а похожие названия модель будет подгонять под существующие значения.",
+      "C": "Свободная строка для document_type даёт непредсказуемые категории, хотя этот список вы контролируете сами."
+    },
+    "takeaway_ru": "Enum для своих категорий с \"other\", а извлекаемые значения вроде vendor_name только строкой."
+  },
+  {
+    "id": "s4-07",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 6,
+    "sheet": "JSON Schema — Additional Patterns",
+    "type": "single",
+    "select": 1,
+    "stem": "Your purchase-order schema has flat fields `item_1_name`, `item_1_qty`, `item_1_price` through `item_5_name`, `item_5_qty`, `item_5_price`. Audits show two problems: orders with two lines often come back with plausible items 3–5, such as \"Freight\" or \"Handling fee\", that do not appear in the document, and orders with eight lines lose lines 6–8. Which schema change fixes both problems?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Make item_3 through item_5 nullable and describe them as \"null if the order has fewer lines\"."
+      },
+      {
+        "key": "B",
+        "text": "Replace the flat fields with a `line_items` array of objects, each with name, qty, and price."
+      },
+      {
+        "key": "C",
+        "text": "Extend the flat fields to item_1 through item_15 and mark every field after item_1 as optional."
+      },
+      {
+        "key": "D",
+        "text": "Add a required `line_item_count` integer and validate it against the number of filled items."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Плоские пронумерованные поля задают фиксированное число позиций: модель заполняет лишние слоты правдоподобными выдумками и обрезает документы, где позиций больше. Массив объектов line_items повторяет реальную структуру документа: его длина равна числу строк, без пустых слотов и без потолка. Одна правка решает обе проблемы.",
+    "why_wrong_ru": {
+      "A": "Nullable уменьшает выдумки, но потолок в пять позиций остаётся, и строки 6–8 по-прежнему теряются.",
+      "C": "Больше слотов только сдвигает потолок и добавляет полей, которые модель склонна заполнять.",
+      "D": "Счётчик помогает заметить расхождение, но не убирает фиксированную структуру, которая порождает обе ошибки."
+    },
+    "takeaway_ru": "Повторяющиеся элементы моделируй массивом, а не полями item_1, item_2 и так далее."
+  },
+  {
+    "id": "s4-08",
+    "domain": 4,
+    "task": "4.4",
+    "scenario": 6,
+    "sheet": "JSON Schema — Additional Patterns",
+    "type": "multi",
+    "select": 2,
+    "stem": "Your extraction service asks for JSON in the system prompt and parses the free-text reply. Its failure log lists five recurring problems. You are migrating to tool use with a strict JSON schema in which `total`, `tax`, `currency`, and `vendor_name` are required and typed (`total` and `tax` as numbers). Which TWO problems should you still expect after the migration? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "JSON wrapped in Markdown code fences or preceded by a sentence of explanation."
+      },
+      {
+        "key": "B",
+        "text": "The `currency` key missing entirely from some of the responses."
+      },
+      {
+        "key": "C",
+        "text": "The tax amount placed in `total` and the total amount placed in `tax`."
+      },
+      {
+        "key": "D",
+        "text": "`total` returned as the string \"1,240.00\" instead of as a number."
+      },
+      {
+        "key": "E",
+        "text": "A plausible `vendor_name` invented when the name on a scan is illegible."
+      }
+    ],
+    "answer": [
+      "C",
+      "E"
+    ],
+    "explanation_ru": "tool_use со строгой схемой гарантирует синтаксически валидный JSON, наличие required полей и совпадение типов, поэтому проблемы A, B и D исчезнут. Он не гарантирует правильность значений, их попадание в нужные поля и отсутствие выдумок: перепутанные tax и total и выдуманный vendor_name останутся. Для них нужны семантическая валидация и nullable-поля.",
+    "why_wrong_ru": {
+      "A": "При tool use данные приходят как input вызова инструмента, обёрток и прозы вокруг JSON нет.",
+      "B": "Строгая схема гарантирует присутствие всех required полей в ответе.",
+      "D": "Строгая схема гарантирует совпадение типа поля со схемой, строка вместо number не пройдёт."
+    },
+    "takeaway_ru": "tool_use гарантирует синтаксис, поля и типы, но не правильность значений."
+  },
+  {
+    "id": "s4-09",
+    "domain": 4,
+    "task": "4.4",
+    "scenario": 6,
+    "sheet": "Retry-with-Feedback Pattern",
+    "type": "multi",
+    "select": 2,
+    "stem": "When Pydantic validation fails, your pipeline sends a retry containing the original document and the message \"The previous extraction had errors. Please try again.\" Across 1,000 retries, the failing field is corrected only 34% of the time, and in 19% of retries fields that had passed validation come back with different, wrong values. Which TWO changes to the retry request address these results? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Include the specific failed rule, the expected vs actual value, and where in the document to look."
+      },
+      {
+        "key": "B",
+        "text": "Raise the temperature on retries so the second attempt explores a different reading of the document."
+      },
+      {
+        "key": "C",
+        "text": "Increase max_retries from 2 to 5 so more failures are eventually corrected by repeated attempts."
+      },
+      {
+        "key": "D",
+        "text": "Include the failed extraction and tell the model to leave fields that passed validation unchanged."
+      },
+      {
+        "key": "E",
+        "text": "Ask the model to re-extract every field from scratch, ignoring its earlier output entirely."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Retry-with-feedback работает, когда запрос конкретен: какая проверка упала, ожидаемое и фактическое значение и где в документе искать. Это поднимает долю исправленных полей. Порчу уже верных полей предотвращает передача неудачной extraction вместе с явной инструкцией не трогать поля, прошедшие валидацию.",
+    "why_wrong_ru": {
+      "B": "Случайность не даёт модели информации об ошибке и делает повторно извлечённые верные поля ещё менее стабильными.",
+      "C": "Больше попыток с той же расплывчатой обратной связью повторяют ту же ошибку и умножают стоимость.",
+      "E": "Извлечение с нуля как раз перезаписывает верные поля, то есть усиливает вторую проблему."
+    },
+    "takeaway_ru": "Retry: конкретная ошибка, ожидаемое против фактического, где искать, верные поля не трогать."
+  },
+  {
+    "id": "s4-10",
+    "domain": 4,
+    "task": "4.4",
+    "scenario": 3,
+    "sheet": "Conflicting Sources Schema",
+    "type": "single",
+    "select": 1,
+    "stem": "In your research system, the document analysis subagent extracts company metrics into a schema where `market_cap` is a single string. For a report on European battery makers, two credible sources dated the same week give $4.1B and $6.8B for one company. The synthesis agent receives only \"$6.8B\", and reviewers of the final report cannot tell that a discrepancy ever existed. How should the extraction schema change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep `market_cap` a string and instruct the subagent to take the value from the more authoritative source."
+      },
+      {
+        "key": "B",
+        "text": "Add a `market_cap_confidence` number so the synthesis agent can see when the chosen value is uncertain."
+      },
+      {
+        "key": "C",
+        "text": "Make `market_cap` an array of {value, source, date} objects and add a `conflict_detected` boolean."
+      },
+      {
+        "key": "D",
+        "text": "Make `market_cap` a number and have the subagent report the average of all values it finds."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Одно строковое поле заставляет модель произвольно выбрать одно значение, и информация о конфликте теряется уже на этапе извлечения. Массив объектов {value, source, date} сохраняет все значения с атрибуцией, а conflict_detected явно сообщает синтезу о расхождении. Дата в каждом элементе также помогает отличить настоящий конфликт от разницы во времени.",
+    "why_wrong_ru": {
+      "A": "Выбор «авторитетного» источника всё равно уничтожает второе значение и скрывает расхождение от ревьюеров.",
+      "B": "Оценка уверенности не сохраняет второе значение и его источник, поэтому конфликт по-прежнему не виден.",
+      "D": "Усреднение даёт число, которого нет ни в одном источнике, и тоже скрывает конфликт."
+    },
+    "takeaway_ru": "Источники расходятся: массив {value, source, date} плюс conflict_detected, а не одна строка."
+  },
+  {
+    "id": "s4-11",
+    "domain": 4,
+    "task": "4.5",
+    "scenario": 6,
+    "sheet": "Batch API — SLA Math",
+    "type": "single",
+    "select": 1,
+    "stem": "You run two extraction workloads on the synchronous API and want to cut costs without missing deadlines. Workload 1: insurance claims arrive continuously, and extracted data is contractually due within 24 hours of receipt. Workload 2: a weekly export of about 4,000 archived contracts must be re-extracted within 48 hours of the export. Which plan should you adopt?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Send both workloads to the Message Batches API, submitting a new claims batch every hour."
+      },
+      {
+        "key": "B",
+        "text": "Keep claims synchronous; send the weekly export to the Batches API right after the export."
+      },
+      {
+        "key": "C",
+        "text": "Move claims to the Message Batches API and keep the weekly export on the synchronous API."
+      },
+      {
+        "key": "D",
+        "text": "Keep both synchronous but send requests in parallel, which earns the same 50% discount."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Окно отправки равно SLA минус 24 часа обработки батча. Для 48-часового SLA остаётся 24 часа, поэтому еженедельную выгрузку можно отправить батчем сразу после экспорта и получить 50% экономии. Для 24-часового SLA окно равно нулю: Message Batches API не гарантирует задержку, значит, заявки остаются на синхронном API.",
+    "why_wrong_ru": {
+      "A": "Даже при ежечасной отправке от получения заявки до результата может пройти до 25 часов, а 24-часовой срок батч не гарантирует.",
+      "C": "План перевёрнут: батч достаётся нагрузке без запаса времени, а терпимая к задержке выгрузка остаётся дорогой.",
+      "D": "Скидка 50% действует только для Message Batches API, параллельные синхронные вызовы стоят полную цену."
+    },
+    "takeaway_ru": "Окно отправки = SLA минус 24 ч; если окно ≤ 0, оставайся на синхронном API."
+  },
+  {
+    "id": "s4-12",
+    "domain": 4,
+    "task": "4.6",
+    "scenario": 6,
+    "sheet": "Confidence Calibration — Must Use Labeled Data",
+    "type": "single",
+    "select": 1,
+    "stem": "Your extraction pipeline has the model self-report a confidence score for each field, auto-accepts fields scored 0.85 or higher, and routes the rest to human review. The threshold was chosen because \"0.85 sounds safe.\" A month-end audit finds that fields scored between 0.85 and 0.90 are correct only 61% of the time. An engineer proposes raising the threshold to 0.95. What should you do instead?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Raise the threshold to 0.95 as proposed and lower it gradually if the review queue grows too large."
+      },
+      {
+        "key": "B",
+        "text": "Instruct the model to score more conservatively, reserving scores above 0.9 for values it is sure of."
+      },
+      {
+        "key": "C",
+        "text": "Replace per-field scores with a single document-level score so that one threshold is easier to tune."
+      },
+      {
+        "key": "D",
+        "text": "Score labeled documents, map each score band to its actual accuracy, and set the threshold there."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Самооценка модели не откалибрована: 0,85 на ваших данных может означать 61% точности, и любой порог, выбранный на глаз, остаётся догадкой. Нужно прогнать модель на размеченных документах, построить таблицу калибровки (диапазон score и фактическая точность) и выбрать порог, при котором фактическая точность достигает цели. Тогда маршрутизация на ревью опирается на измерения.",
+    "why_wrong_ru": {
+      "A": "0,95 такая же произвольная цифра: без калибровки неизвестно, какой реальной точности она соответствует.",
+      "B": "Просьба оценивать строже меняет шкалу, но не связывает её с реальной точностью, калибровки по-прежнему нет.",
+      "C": "Один балл на документ скрывает слабые поля и не решает проблему: его тоже нужно калибровать на размеченных данных."
+    },
+    "takeaway_ru": "Порог уверенности выбирай по таблице калибровки на размеченных данных, а не на глаз."
+  }
+]

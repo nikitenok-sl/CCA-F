@@ -1,0 +1,83 @@
+{
+  "name": "Гайд",
+  "blurb": "официальный Exam Guide",
+  "title": "Тренажёр CCAR-F",
+  "source": "Exam Guide v1.0 · 07.2026",
+  "sub": "Claude Certified Architect – Foundations. Вопросы на английском, как на экзамене. Разборы на русском: почему верный ответ верен и чем плох каждый неверный.",
+  "footer": "Неофициальный тренажёр, не связан с Anthropic. Вопросы с пометкой «Официальный пример» взяты из публичного Exam Guide v1.0 дословно. Остальные составлены по task statements гайда и не являются вопросами реального экзамена. Прогресс каждого набора хранится только в этом браузере.",
+  "storageKey": "ccarf.v1",
+  "defaultView": "practice",
+  "notesTab": "Конспект",
+  "progressLabel": "Точность по доменам",
+  "files": [
+    "official.json",
+    "d1.json",
+    "d2.json",
+    "d3.json",
+    "d4.json",
+    "d5.json"
+  ],
+  "requires": [],
+  "flag": {
+    "field": "official",
+    "label": "Только официальные"
+  },
+  "group": null,
+  "countNote": "{n} вопр. · {flagged} офиц.",
+  "progress": "domain",
+  "cardSource": "Вопрос составлен по task statement из Exam Guide v1.0",
+  "cardSourceFlag": "Официальный пример из Exam Guide v1.0",
+  "examRule": "Вопросы распределены по весам доменов (16 / 11 / 12 / 12 / 9 в полном варианте) и сгруппированы по сценариям, как на реальном экзамене.",
+  "exam": {
+    "full": {
+      "label": "Полный экзамен",
+      "per": {
+        "1": 16,
+        "2": 11,
+        "3": 12,
+        "4": 12,
+        "5": 9
+      }
+    },
+    "short": {
+      "label": "Короткий прогон",
+      "per": {
+        "1": 5,
+        "2": 4,
+        "3": 4,
+        "4": 4,
+        "5": 3
+      }
+    }
+  },
+  "palette": {
+    "light": {
+      "paper": "#EDF2F4",
+      "dot": "#D3DEE3",
+      "sheet": "#FBFCFC",
+      "ink": "#16222B",
+      "ink-2": "#465763",
+      "ink-3": "#6F808C",
+      "rule": "#C8D6DD",
+      "track": "#DFE8EC",
+      "form": "#1C6A88",
+      "form-soft": "#D9E9EF",
+      "graphite": "#262B31",
+      "on-fill": "#FBFCFC"
+    },
+    "dark": {
+      "paper": "#0E1418",
+      "dot": "#1A242A",
+      "sheet": "#151E24",
+      "ink": "#E2E9ED",
+      "ink-2": "#A8B6BF",
+      "ink-3": "#7F8E98",
+      "rule": "#2A3841",
+      "track": "#23313A",
+      "form": "#62B5D4",
+      "form-soft": "#16323E",
+      "graphite": "#DDE5EA",
+      "on-fill": "#10171B"
+    }
+  }
+}

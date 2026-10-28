@@ -1,0 +1,468 @@
+[
+  {
+    "id": "s5-01",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 1,
+    "sheet": "Context Window Strategies",
+    "type": "multi",
+    "select": 2,
+    "stem": "Your support agent handles two conversation profiles. Return requests average 8 turns and rarely exceed 15. Billing disputes average 55 turns, and transcripts show customers restating order numbers, disputed amounts, and promised callback dates they gave early in the conversation. The team currently sends only the last 10 turns on every request for both profiles, and in several disputes the agent refunded the wrong amount. Which TWO context strategies should you adopt? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep a sliding window for disputes but widen it from 10 to 25 turns, since the most recent turns carry the details that matter most."
+      },
+      {
+        "key": "B",
+        "text": "Send the full conversation history for return requests, since these conversations are short enough to fit the token budget."
+      },
+      {
+        "key": "C",
+        "text": "Replace dispute history with a facts block alone, sending only the extracted facts plus the customer's latest message."
+      },
+      {
+        "key": "D",
+        "text": "Summarize older dispute turns into a running summary and rely on it to carry amounts, dates, and order numbers forward."
+      },
+      {
+        "key": "E",
+        "text": "Summarize older dispute turns and prepend a persistent case facts block holding amounts, order IDs, and promised dates."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Короткие диалоги помещаются в бюджет токенов, поэтому для возвратов полная история сохраняет всё без потерь. Для длинных споров старые ходы суммаризируют, но суммы, ID заказов и обещанные даты держат в постоянном блоке case facts, который добавляется к каждому запросу. Блок фактов не заменяет историю, а всегда дополняет выбранную стратегию.",
+    "why_wrong_ru": {
+      "A": "Скользящее окно любой ширины рано или поздно отбрасывает ранние ходы, где клиент назвал сумму и номер заказа.",
+      "C": "Блок фактов всегда комбинируют с историей или сводкой, без них агент теряет связность диалога.",
+      "D": "Суммаризация как раз теряет суммы, даты и ID, если не вынести их в отдельный блок фактов."
+    },
+    "takeaway_ru": "Короткий диалог: полная история. Длинный: сводка плюс блок фактов. Блок фактов нужен всегда."
+  },
+  {
+    "id": "s5-02",
+    "domain": 5,
+    "task": "5.2",
+    "scenario": 1,
+    "sheet": "Escalation Nuances (Exam-Specific Scenarios)",
+    "type": "multi",
+    "select": 2,
+    "stem": "You are writing few-shot examples for the escalation section of your support agent's system prompt. Reviewers pulled five transcripts from last week as candidates for \"escalate\" examples. Unless stated otherwise, in each case the agent has the tools and policy authority to resolve the underlying issue itself. Which TWO transcripts should be labeled as correct escalations? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "The customer's first message asks, \"Can I speak to a human about my refund?\" before giving any order details."
+      },
+      {
+        "key": "B",
+        "text": "A customer is contacting support for the third time about the same missing parcel, which the agent can reship today."
+      },
+      {
+        "key": "C",
+        "text": "A customer writes \"Don't transfer me, just fix it\" about a duplicate charge within the agent's refund limit."
+      },
+      {
+        "key": "D",
+        "text": "A customer asks to match a competitor's lower price, and the policy only covers price drops on your own site."
+      },
+      {
+        "key": "E",
+        "text": "A customer types in all caps about a late delivery but never asks for a person, and a standard delay credit applies."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Вопрос \"Can I speak to a human?\" это явная просьба о человеке, даже в вопросительной форме, и её выполняют сразу, без попытки расследовать. Политика, которая молчит о price matching конкурентов, это пробел в политике, и такой запрос тоже эскалируют. Число обращений, тон и злость клиента не являются триггерами, если агент способен решить проблему.",
+    "why_wrong_ru": {
+      "B": "Повторное обращение не триггер: агент решает проблему, а паттерн повторных обращений сообщает отдельно.",
+      "C": "Клиент прямо просит не переводить, а проблема в полномочиях агента, поэтому предпочтение уважают и решают сами.",
+      "E": "Раздражённый тон без просьбы о человеке не триггер: сначала признать эмоцию и предложить решение."
+    },
+    "takeaway_ru": "Эскалируй на явную просьбу или пробел в политике; тон и число звонков не триггеры."
+  },
+  {
+    "id": "s5-03",
+    "domain": 5,
+    "task": "5.2",
+    "scenario": 1,
+    "sheet": "Escalation Nuances (Exam-Specific Scenarios)",
+    "type": "single",
+    "select": 1,
+    "stem": "A customer raises three issues in one message: order #5521 arrived with a cracked screen (photo attached), the shipping address on her account is outdated, and she wants a $300 goodwill credit for a ruined trip. The replacement and the address change are within the agent's authority; the credit requires manager approval. Today the agent escalates the entire conversation whenever any concern needs a manager. What should it do instead?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Escalate the whole conversation so that a single human owns all three concerns and the customer receives one consistent answer."
+      },
+      {
+        "key": "B",
+        "text": "Resolve the replacement and address change, then escalate the credit with a handoff note listing what is already done."
+      },
+      {
+        "key": "C",
+        "text": "Resolve the replacement and address change, then tell the customer to contact a manager separately about the credit request."
+      },
+      {
+        "key": "D",
+        "text": "Resolve the replacement and address change, and decline the credit because it falls outside the agent's own refund authority."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Обращение с несколькими проблемами разбирают по частям: то, что в полномочиях агента, решают сразу, а эскалируют только часть, которой нужен менеджер. Handoff note перечисляет уже выполненные действия и то, что осталось, чтобы человек не начинал с нуля и не повторял работу.",
+    "why_wrong_ru": {
+      "A": "Эскалация всего диалога отнимает у агента решаемые задачи и снижает first-contact resolution.",
+      "C": "Клиенту приходится обращаться заново и повторять историю, хотя агент может передать запрос сам.",
+      "D": "Запрос вне полномочий агента повод для эскалации к менеджеру, а не для отказа."
+    },
+    "takeaway_ru": "Решай то, что можешь; эскалируй только остаток с заметкой о сделанном."
+  },
+  {
+    "id": "s5-04",
+    "domain": 5,
+    "task": "5.2",
+    "scenario": 1,
+    "sheet": "Frustration Nuance",
+    "type": "single",
+    "select": 1,
+    "stem": "A customer writes: \"Your courier left my package in the rain and everything inside is ruined. This is unacceptable.\" The case qualifies for a standard replacement. The agent replies: \"I'm sorry, that's really frustrating. I can ship a replacement today at no cost, arriving Thursday.\" The customer answers: \"No. I'd rather just deal with a person.\" What should the agent do next?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Restate the replacement offer with more detail, since the case is within policy and resolving it protects first-contact resolution."
+      },
+      {
+        "key": "B",
+        "text": "Ship the replacement anyway because the case is straightforward, then mention that a human can follow up if still needed."
+      },
+      {
+        "key": "C",
+        "text": "Escalate to a human now, passing the order details and the offer already made so the customer need not repeat anything."
+      },
+      {
+        "key": "D",
+        "text": "Ask the customer what a human could do differently, and escalate only if the reason falls outside the agent's capability."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "При раздражении порядок такой: признать эмоцию, предложить конкретное решение и эскалировать, если клиент после этого всё же хочет говорить с человеком. Агент уже сделал первые два шага, клиент ясно выразил предпочтение, поэтому теперь нужна эскалация без новых попыток уговорить. В передачу входят детали заказа и уже сделанное предложение.",
+    "why_wrong_ru": {
+      "A": "Повтор того же предложения игнорирует ясно выраженное предпочтение клиента.",
+      "B": "Действие после отказа клиента нарушает его выбор и не отменяет просьбу о человеке.",
+      "D": "Требовать обоснование просьбы о человеке значит ставить барьер перед явным предпочтением."
+    },
+    "takeaway_ru": "Раздражение: признай и предложи решение. Клиент хочет человека: эскалируй сразу."
+  },
+  {
+    "id": "s5-05",
+    "domain": 5,
+    "task": "5.3",
+    "scenario": 3,
+    "sheet": "Error Propagation Pattern",
+    "type": "single",
+    "select": 1,
+    "stem": "Your research coordinator runs as a nightly job for a pharmaceutical client. In last night's run on GLP-1 drug pricing, the web search and document analysis subagents finished after 38 minutes, but the regulatory search subagent returned HTTP 503 after two local retries. The coordinator raised an exception, the job was marked failed, and the client received nothing. How should the coordinator report this outcome to the report generation step?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Mark the run as failed with the message \"regulatory search unavailable\" and schedule a full rerun of every subagent tomorrow."
+      },
+      {
+        "key": "B",
+        "text": "Pass the web and document results on as a normal complete result, so the report ships on time without alarming the client."
+      },
+      {
+        "key": "C",
+        "text": "Retry the regulatory subagent in a loop until it succeeds, holding all other results until the full set is ready for synthesis."
+      },
+      {
+        "key": "D",
+        "text": "Return a \"partial\" status naming successful and failed agents, the failure reason, partial results, and a recommendation."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Частичный результат лучше, чем никакого: координатор передаёт дальше то, что получено, и явно описывает сбой. Структура со status \"partial\", successful_agents, failed_agent, failure_reason, partial_results и recommendation позволяет выпустить отчёт и пометить regulatory-пробел. Тихая подача неполных данных и прерывание всего workflow оба являются анти-паттернами.",
+    "why_wrong_ru": {
+      "A": "Прерывание выбрасывает 38 минут успешной работы, хотя частичный результат полезен клиенту.",
+      "B": "Неполные данные под видом полных скрывают пробел, и отчёт выглядит исчерпывающим без regulatory-части.",
+      "C": "Повтор без лимита блокирует доставку и при долгом сбое может не завершиться никогда."
+    },
+    "takeaway_ru": "Упал один агент: status partial с причиной и рекомендацией, не тишина и не abort."
+  },
+  {
+    "id": "s5-06",
+    "domain": 5,
+    "task": "5.3",
+    "scenario": 3,
+    "sheet": "Rule 8",
+    "type": "single",
+    "select": 1,
+    "stem": "Your document analysis subagent processes 12 PDFs per task. When one PDF fetch times out, it immediately returns {\"error\": \"timeout\"} to the coordinator and discards the 11 analyses it already completed. The coordinator then re-dispatches the whole task, and traces show about 30% of runs repeat work this way. Most of these timeouts succeed on a second attempt. How should the subagent handle such failures?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Retry the timeout locally; if it still fails, return the 11 analyses with a structured error naming the PDF and attempts."
+      },
+      {
+        "key": "B",
+        "text": "Return the 11 analyses and quietly omit the failed PDF, since a single missing document rarely changes the final synthesis."
+      },
+      {
+        "key": "C",
+        "text": "Keep returning the timeout error immediately, and have the coordinator rerun the whole task with a longer timeout setting."
+      },
+      {
+        "key": "D",
+        "text": "Abort the task on the first timeout so that the coordinator can mark the subtopic unavailable and move on to the next one."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Временные сбои субагент сначала обрабатывает сам: повторная попытка обычно решает проблему без участия координатора. Если ошибка осталась, наверх уходит структурированный контекст: какой документ упал, что пробовали, и уже готовые частичные результаты. Так координатор не повторяет выполненную работу и видит точный пробел.",
+    "why_wrong_ru": {
+      "B": "Тихий пропуск документа скрывает пробел от координатора, и покрытие становится неполным без пометки.",
+      "C": "Каждая временная ошибка по-прежнему перезапускает всю задачу, хотя второй попытки обычно хватает.",
+      "D": "Прерывание из-за одного таймаута выбрасывает 11 готовых анализов."
+    },
+    "takeaway_ru": "Transient-ошибки чини локально; наверх только нерешённое, с попытками и частичными результатами."
+  },
+  {
+    "id": "s5-07",
+    "domain": 5,
+    "task": "5.4",
+    "scenario": 4,
+    "sheet": "/compact Trap",
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer is midway through planning a refactor of a legacy authentication service with your exploration agent and has not restarted the session since morning. Recently the agent described token handling \"as is typical in services like this,\" contradicted its earlier statement about where sessions are stored, and asked which file contains the refresh logic it read an hour ago. Context is 92% full. The engineer plans to run /compact and continue. What should happen first?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Run /compact now, then ask the agent to write a scratchpad file of key findings from its compacted context for later use."
+      },
+      {
+        "key": "B",
+        "text": "Have the agent write its findings, with file paths, line numbers, and config values, to a scratchpad file before compacting."
+      },
+      {
+        "key": "C",
+        "text": "Run /compact right away, since the summary keeps the important conclusions while freeing the space needed to continue."
+      },
+      {
+        "key": "D",
+        "text": "Switch to a model with a larger context window so the full session history fits and no summarization is needed."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Общие формулировки, противоречия самому себе и повторные вопросы об уже прочитанном это три признака деградации контекста. Перед /compact или новой сессией конкретику (пути, номера строк, значения конфигурации) выносят в scratchpad-файл, иначе сводка заменит её общими фразами вроде \"auth uses JWT\". Дальше агент опирается на этот файл, а не на сжатую историю.",
+    "why_wrong_ru": {
+      "A": "После /compact конкретика уже сжата, и scratchpad будет записан из потерянных деталей.",
+      "C": "/compact заменяет историю сводкой, и точные находки из середины диалога превращаются в общие выводы.",
+      "D": "Больший контекст лишь откладывает деградацию и не устраняет её причину."
+    },
+    "takeaway_ru": "Сначала конкретика в scratchpad, потом /compact. Никогда наоборот."
+  },
+  {
+    "id": "s5-08",
+    "domain": 5,
+    "task": "5.4",
+    "scenario": 4,
+    "sheet": "Crash Recovery — State Persistence",
+    "type": "single",
+    "select": 1,
+    "stem": "Your productivity agent's coordinator spawns seven subagents, one per service, to document a legacy logistics platform before migration. Each subagent takes 15 to 25 minutes. Yesterday the host process crashed after four subagents had finished, a fifth was halfway through the routing service, and two had not started. The team reran everything from scratch and lost two hours. Which design makes the next crash recoverable?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Have each subagent write state to a known file and keep a manifest the coordinator loads on resume to skip completed work."
+      },
+      {
+        "key": "B",
+        "text": "Resume the coordinator's conversation by its session ID and let it infer from message history which modules were documented."
+      },
+      {
+        "key": "C",
+        "text": "Merge all seven service analyses into one long-running subagent so a single session holds every finding and resumes as a whole."
+      },
+      {
+        "key": "D",
+        "text": "Wrap each subagent in retries with longer timeouts so that the host process is less likely to crash during long module runs."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Восстановление после сбоя строится на структурном состоянии: каждый агент выгружает результат в известное место, а manifest.json фиксирует completed, in_progress и not_started. При перезапуске координатор читает manifest, пропускает завершённые модули, продолжает незавершённый с сохранённого состояния и передаёт это состояние в промпты агентов.",
+    "why_wrong_ru": {
+      "B": "В истории координатора нет промежуточного состояния субагентов, и вывод о прогрессе из неё ненадёжен.",
+      "C": "Один длинный субагент теряет изоляцию контекста и при сбое теряет сразу всё.",
+      "D": "Retry снижает вероятность сбоя, но не позволяет продолжить с места падения."
+    },
+    "takeaway_ru": "Каждый агент пишет состояние в файл; на resume координатор читает manifest и пропускает completed."
+  },
+  {
+    "id": "s5-09",
+    "domain": 5,
+    "task": "5.5",
+    "scenario": 6,
+    "sheet": "Aggregate Metrics Trap",
+    "type": "single",
+    "select": 1,
+    "stem": "Your team tested a revised extraction prompt for vendor invoices against a labeled set of 2,000 documents. Field-level accuracy rose from 95.1% to 97.2%, and the team wants to ship it today. The labeled set mixes single-page domestic invoices with multi-currency invoices from enterprise suppliers, which make up about 4% of volume but most of the payment value. What should you do before shipping?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Ship the new prompt, since a two-point gain measured on 2,000 labeled documents is statistically meaningful at this size."
+      },
+      {
+        "key": "B",
+        "text": "Expand the labeled set to 10,000 documents and recompute overall accuracy to confirm the gain holds at a larger scale."
+      },
+      {
+        "key": "C",
+        "text": "Compare old and new accuracy by document type and field, confirming no segment like multi-currency invoices regressed."
+      },
+      {
+        "key": "D",
+        "text": "Compare the model's average self-reported confidence before and after the change to confirm it is more certain overall."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "97% в среднем может скрывать высокую долю ошибок в сегменте, который составляет меньше 5% объёма. Поэтому точность сравнивают по типам документов и по полям, а не только в целом. Если multi-currency инвойсы деградировали, общий прирост не является улучшением для бизнеса.",
+    "why_wrong_ru": {
+      "A": "Рост общей метрики может скрывать провал в маленьком сегменте, который весит больше всего по деньгам.",
+      "B": "Больший набор даёт ту же агрегированную цифру и так же маскирует регрессию в сегменте.",
+      "D": "Средняя самооценка уверенности не измеряет точность и не показывает, где модель ошибается."
+    },
+    "takeaway_ru": "Проверяй точность по сегментам, а не только общую цифру."
+  },
+  {
+    "id": "s5-10",
+    "domain": 5,
+    "task": "5.5",
+    "scenario": 6,
+    "sheet": "Aggregate Metrics Trap",
+    "type": "single",
+    "select": 1,
+    "stem": "Your pipeline auto-approves invoice extractions with calibrated confidence of 0.90 or higher, about 85% of volume, and sends the rest to human review. Six weeks ago a large supplier switched to a new invoice template. Finance has just discovered that since then the model has confidently placed the issue date in due_date on that supplier's invoices, and no reviewer saw them. Which change would catch this kind of problem early?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Raise the auto-approval threshold from 0.90 to 0.97 so that fewer borderline extractions bypass the human review queue."
+      },
+      {
+        "key": "B",
+        "text": "Have the model re-check each high-confidence extraction in the same conversation and lower its score on any inconsistency."
+      },
+      {
+        "key": "C",
+        "text": "Track overall accuracy weekly on the existing labeled validation set and alert when it drops by more than one point."
+      },
+      {
+        "key": "D",
+        "text": "Send a stratified random sample of high-confidence extractions, across suppliers and document types, to human review."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Новые паттерны ошибок, например новый шаблон документа, появляются среди уверенных извлечений и не видны в агрегированных метриках, пока не станут массовыми. Стратифицированная случайная выборка уверенных извлечений по поставщикам и типам документов регулярно уходит людям и измеряет реальный уровень ошибок. Так проблему заметили бы за дни, а не через шесть недель.",
+    "why_wrong_ru": {
+      "A": "Произвольное повышение порога не опирается на калибровку, а уверенные ошибки нового шаблона всё равно пройдут.",
+      "B": "Самопроверка в том же контексте повторяет те же слепые пятна и не даёт внешнего измерения ошибок.",
+      "C": "Старый размеченный набор не содержит нового шаблона, поэтому новая ошибка в общей метрике не появится."
+    },
+    "takeaway_ru": "Даже уверенные извлечения аудируй стратифицированной случайной выборкой."
+  },
+  {
+    "id": "s5-11",
+    "domain": 5,
+    "task": "5.6",
+    "scenario": 3,
+    "sheet": "Provenance — Temporal vs Methodology Conflicts",
+    "type": "single",
+    "select": 1,
+    "stem": "Your research system's report on industrial heat pumps lists two items under \"Contested findings.\" First, one analyst firm sizes the 2023 global market at $1.2B, while another firm sizes the 2024 market at $2.1B. Second, for 2024 installation growth, a peer-reviewed study reports 18% and a vendor's blog post reports 41%. Both items carry conflict_detected: true. How should synthesis treat them?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep both items under contested findings, because any two differing values for the same metric must be reported as conflicts."
+      },
+      {
+        "key": "B",
+        "text": "Present the market figures as year-over-year growth, and report both growth rates with source types, flagging the blog."
+      },
+      {
+        "key": "C",
+        "text": "Keep only the 2024 market figure, since newer data supersedes older data, and drop the blog post as not peer-reviewed."
+      },
+      {
+        "key": "D",
+        "text": "Average the two market figures into one estimate, and present both growth rates as an equally credible method conflict."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "$1.2B в 2023 и $2.1B в 2024 это рост, а не противоречие: такие данные подают как временной ряд с conflict_detected: false. Когда расходятся рецензируемое исследование и блог вендора, оба значения сохраняют с атрибуцией, но отмечают качество источника и взвешивают вывод соответственно. Конфликт с объяснением методологии нужен только для одного периода и разных методов.",
+    "why_wrong_ru": {
+      "A": "Разные годы образуют временной ряд, и правило \"любое различие значит конфликт\" искажает выводы.",
+      "C": "Старое значение нужно, чтобы показать рост, а слабый источник помечают и взвешивают, а не удаляют молча.",
+      "D": "Усреднение разных лет уничтожает тренд, а блог и рецензируемое исследование не равны по надёжности."
+    },
+    "takeaway_ru": "Разные годы: рост, не конфликт. Разное качество источников: пометь и взвесь."
+  },
+  {
+    "id": "s5-12",
+    "domain": 5,
+    "task": "5.6",
+    "scenario": 3,
+    "sheet": "Information Provenance — Structured Claim-Source Mapping",
+    "type": "single",
+    "select": 1,
+    "stem": "Stakeholders say reports from your research system are hard to use. The report generation subagent turns every finding into one flat bullet list: quarterly revenue for six companies over four years becomes dozens of separate bullets, a narrative analysis of a merger becomes disconnected fragments, and pricing data from 2019 to 2025 appears in no particular order. Claim-source mappings are intact. What should you change in the report generation instructions?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep one uniform bullet format for consistency across all reports, but group the bullets under a header for each source."
+      },
+      {
+        "key": "B",
+        "text": "Render every finding as a table, since tables preserve the most detail and make claim-source mappings easiest to audit."
+      },
+      {
+        "key": "C",
+        "text": "Let the subagent pick any format it prefers for each section, then add a closing paragraph restating the key findings."
+      },
+      {
+        "key": "D",
+        "text": "Render by content type: financials as tables, news as prose, technical findings as lists, time series chronologically."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Разный контент требует разной подачи: финансовые данные читаются в таблицах, новости и аналитика в связной прозе, технические находки в структурированных списках, временные ряды в хронологическом порядке. Единый формат для всего ломает сравнение цифр и смысл повествования. Связки claim-source при этом сохраняются в любой форме.",
+    "why_wrong_ru": {
+      "A": "Единый формат списка оставляет проблему: цифры не сравнить, повествование рвётся, порядок лет не восстанавливается.",
+      "B": "Таблица подходит для финансов, но превращает аналитическую прозу в обрывки ячеек.",
+      "C": "Свобода без правил не гарантирует подходящую подачу, а итоговый абзац не чинит формат секций."
+    },
+    "takeaway_ru": "Финансы в таблицы, новости в прозу, техника в списки, ряды по хронологии."
+  }
+]

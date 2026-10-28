@@ -1,0 +1,456 @@
+[
+  {
+    "id": "d3-01",
+    "domain": 3,
+    "task": "3.1",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A tech lead set up Claude Code six months ago and wrote the team's API error-handling and logging conventions into ~/.claude/CLAUDE.md. A new engineer cloned the repository last week; in her sessions Claude ignores those conventions, while the lead's sessions follow them. Running /memory shows the lead's session loading ~/.claude/CLAUDE.md plus the repository's CLAUDE.md, but her session loads only the repository's CLAUDE.md. What is the correct fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Ask the new engineer to copy the lead's ~/.claude/CLAUDE.md into her own home directory so both sessions load identical instructions."
+      },
+      {
+        "key": "B",
+        "text": "Add a line to the repository's CLAUDE.md instructing Claude to also read the tech lead's personal configuration file at startup."
+      },
+      {
+        "key": "C",
+        "text": "Move the conventions into the project-level CLAUDE.md committed to the repository, so every clone loads them via version control."
+      },
+      {
+        "key": "D",
+        "text": "Add a .claude/settings.json entry that marks ~/.claude/CLAUDE.md as shared so it is distributed to teammates on every pull."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Инструкции в ~/.claude/CLAUDE.md относятся к пользовательскому уровню иерархии и применяются только к этому пользователю, через систему контроля версий они не передаются. Вывод /memory как раз показывает, что в сессии новой коллеги этот файл не загружается. Общекомандные конвенции должны лежать на уровне проекта (корневой CLAUDE.md или .claude/CLAUDE.md), тогда каждый клон репозитория получает их автоматически.",
+    "why_wrong_ru": {
+      "A": "Ручное копирование лечит одного человека, но не масштабируется: каждый новичок и каждое изменение требуют повторного копирования, и файлы расходятся.",
+      "B": "Путь к домашнему каталогу тимлида не существует на чужой машине, а просьба в тексте не заменяет механизм загрузки конфигурации.",
+      "D": "Такой настройки в Claude Code нет, пользовательский уровень по определению не распространяется через репозиторий."
+    },
+    "takeaway_ru": "Командные правила кладём в проектный CLAUDE.md, ~/.claude/CLAUDE.md видит только его владелец."
+  },
+  {
+    "id": "d3-02",
+    "domain": 3,
+    "task": "3.1",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your monorepo has 11 packages. The root CLAUDE.md has grown to 1,600 lines because it pastes every standards document in full: PCI logging rules, accessibility guidelines, GraphQL schema conventions, and data-retention policies. Engineers in the docs-site package report that Claude applies PCI logging rules to static pages. Each package maintainer knows which standards apply to their package, and the standards already exist as separate files in a shared standards/ directory. What is the most maintainable way to restructure the configuration?",
+    "options": [
+      {
+        "key": "A",
+        "text": "In each package's CLAUDE.md, @import only the standards files its maintainer deems relevant, and remove the pasted root copies."
+      },
+      {
+        "key": "B",
+        "text": "Keep every standard in the root CLAUDE.md and label each section with the packages it applies to, relying on Claude to infer the right scope."
+      },
+      {
+        "key": "C",
+        "text": "Copy the text of each relevant standard directly into the package-level CLAUDE.md files so every package is fully self-contained."
+      },
+      {
+        "key": "D",
+        "text": "Have each package maintainer add their package's standards to their own ~/.claude/CLAUDE.md, since they know the domain best."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Синтаксис @import позволяет держать CLAUDE.md модульным: файл пакета ссылается на внешние файлы стандартов, а не дублирует их текст. Гайд прямо описывает этот навык: выборочно подключать нужные стандарты в CLAUDE.md каждого пакета на основе знаний мейнтейнера. Каждый стандарт остаётся в одном месте в standards/, а пакет docs-site перестаёт получать нерелевантные PCI-правила.",
+    "why_wrong_ru": {
+      "B": "Расчёт на то, что Claude сам выведет область применения из заголовков, ненадёжен, и все 1 600 строк по-прежнему грузятся в каждую сессию.",
+      "C": "Копирование текста создаёт несколько копий одного стандарта, которые со временем расходятся, а @import решает ту же задачу без дублирования.",
+      "D": "Пользовательский уровень не попадает в репозиторий, поэтому остальные инженеры пакета эти стандарты не получат."
+    },
+    "takeaway_ru": "Стандарты для пакета подключай через @import, а не копируй текст."
+  },
+  {
+    "id": "d3-03",
+    "domain": 3,
+    "task": "3.2",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team ships a project skill, /map-legacy, defined in .claude/skills/map-legacy/SKILL.md. It walks an unfamiliar legacy module, reading dozens of files and printing call graphs, and engineers invoke it at the start of refactoring sessions. After one run, the main conversation holds roughly 60,000 tokens of file listings and intermediate notes, and Claude's later edits reference stale details from that dump instead of the current task. What change best addresses this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add allowed-tools: Read, Grep, Glob to the frontmatter so the skill cannot modify any files while it explores the legacy module."
+      },
+      {
+        "key": "B",
+        "text": "Move the skill's instructions into the root CLAUDE.md so the mapping guidance is always available without invoking a skill."
+      },
+      {
+        "key": "C",
+        "text": "Tell engineers to run /compact after every /map-legacy invocation to shrink the output before they continue the refactor."
+      },
+      {
+        "key": "D",
+        "text": "Add context: fork to the SKILL.md frontmatter so exploration runs in an isolated sub-agent context instead of the main one."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Опция context: fork во frontmatter SKILL.md запускает навык в изолированном контексте сабагента, поэтому многословный вывод анализа кодовой базы не засоряет основной диалог. Гайд приводит именно этот случай: изолировать навыки с объёмным выводом (codebase analysis) или исследовательским контекстом от основной сессии. В основную беседу возвращается результат, а не весь промежуточный дамп.",
+    "why_wrong_ru": {
+      "A": "allowed-tools ограничивает набор инструментов, но весь вывод навыка по-прежнему попадает в основной контекст.",
+      "B": "CLAUDE.md загружается всегда, это добавит токены в каждую сессию и никак не изолирует вывод самого анализа.",
+      "C": "/compact лечит уже засорённый контекст, требует ручной дисциплины и при сжатии может потерять детали текущей задачи."
+    },
+    "takeaway_ru": "Навык с объёмным выводом → context: fork в SKILL.md."
+  },
+  {
+    "id": "d3-04",
+    "domain": 3,
+    "task": "3.2",
+    "scenario": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your team's project skill /new-endpoint scaffolds a REST handler, its route registration, and a test file. Over 3 weeks two problems surfaced: developers often type /new-endpoint with no arguments, and Claude invents a resource name instead of asking; and in one run Claude executed a Bash command that deleted an existing migrations folder while \"cleaning up\" the workspace. Which TWO changes to the skill's SKILL.md frontmatter address these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add argument-hint naming the expected resource name and HTTP method, so developers are prompted for them when invoking the skill bare."
+      },
+      {
+        "key": "B",
+        "text": "Add context: fork so scaffolding runs in an isolated sub-agent context and its output stays out of the main conversation."
+      },
+      {
+        "key": "C",
+        "text": "Move the skill to ~/.claude/skills/ so that only developers who understand its risks have it available in their sessions."
+      },
+      {
+        "key": "D",
+        "text": "Add allowed-tools limited to file read and write operations, so the skill has no Bash access while it runs."
+      },
+      {
+        "key": "E",
+        "text": "Add a confirm-destructive: true key so Claude must request explicit approval before deleting any file during the skill."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "argument-hint во frontmatter подсказывает разработчику, какие параметры нужны, когда навык вызван без аргументов, и Claude перестаёт придумывать имя ресурса. allowed-tools ограничивает инструменты, доступные во время выполнения навыка: если оставить только операции с файлами, удаляющая Bash-команда становится невозможной. Оба ключа описаны в гайде как штатная конфигурация SKILL.md.",
+    "why_wrong_ru": {
+      "B": "context: fork изолирует вывод от основного диалога, но не ограничивает инструменты и не запрашивает аргументы.",
+      "C": "Перенос в пользовательскую директорию лишает команду общего навыка и не устраняет ни одну из двух проблем.",
+      "E": "Ключа confirm-destructive во frontmatter SKILL.md не существует, ограничение делается через allowed-tools."
+    },
+    "takeaway_ru": "Нужны параметры → argument-hint. Опасные действия → allowed-tools."
+  },
+  {
+    "id": "d3-05",
+    "domain": 3,
+    "task": "3.3",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team split a monolithic CLAUDE.md into topic files in .claude/rules/: testing.md, api-conventions.md, deployment.md, and terraform.md. terraform.md holds about 2,400 tokens of module, state-locking, and tagging conventions, yet only 3 of 20 engineers ever touch the terraform/ directory. Session logs show terraform.md loaded in every session, including frontend work, and Claude occasionally suggests resource-tagging conventions inside React code. What change best fixes this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Delete terraform.md from .claude/rules/ and turn it into a /terraform skill that infra engineers invoke manually before editing."
+      },
+      {
+        "key": "B",
+        "text": "Add YAML frontmatter with paths: [\"terraform/**/*\"] to terraform.md so it loads only when Claude edits files under terraform/."
+      },
+      {
+        "key": "C",
+        "text": "Move the contents of terraform.md into the three infra engineers' ~/.claude/CLAUDE.md files so frontend sessions never load it."
+      },
+      {
+        "key": "D",
+        "text": "Add a sentence at the top of terraform.md telling Claude to ignore these conventions unless the current file is Terraform."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Файлы в .claude/rules/ с YAML frontmatter paths и glob-паттерном активируются условно: правило загружается только при редактировании подходящих файлов. Это убирает нерелевантный контекст и лишний расход токенов у 17 инженеров, которые не трогают terraform/, и прекращает подмешивание конвенций в чужой код. Гайд приводит ровно этот пример: paths: [\"terraform/**/*\"].",
+    "why_wrong_ru": {
+      "A": "Навык требует ручного вызова, и при забытом вызове конвенции не применятся, а path-scoped правило срабатывает автоматически.",
+      "C": "Пользовательский уровень не версионируется: новые инфраструктурщики правил не получат, а изменения придётся синхронизировать вручную.",
+      "D": "Инструкция внутри файла не мешает ему загружаться, токены всё так же тратятся в каждой сессии, а игнорирование остаётся вероятностным."
+    },
+    "takeaway_ru": "Правило для части репозитория → paths: в frontmatter, токены тратятся только там."
+  },
+  {
+    "id": "d3-06",
+    "domain": 3,
+    "task": "3.3",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Engineers use Claude Code to generate boilerplate API handlers. The rule file .claude/rules/api-conventions.md has frontmatter paths: [\"src/api/*\"]. When Claude edits src/api/router.ts it applies the conventions (typed error envelopes, request-id logging), but when it edits src/api/v2/orders/handler.ts or src/api/v2/payments/refund.ts it ignores them. The 37 handler files are nested up to four levels deep. What is the root cause and fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Path-scoped rules never apply below one directory level; place a separate CLAUDE.md in each nested src/api/v2/ subdirectory instead."
+      },
+      {
+        "key": "B",
+        "text": "The paths value must be a plain string rather than an array; rewrite it as paths: src/api/* so nested files are matched."
+      },
+      {
+        "key": "C",
+        "text": "The glob \"src/api/*\" matches only direct children of src/api/; change it to \"src/api/**/*\" to match files at any depth."
+      },
+      {
+        "key": "D",
+        "text": "Rules load only once at session start; tell Claude in the prompt to re-read api-conventions.md before editing nested handlers."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "В glob-паттернах * совпадает только в пределах одного сегмента пути, поэтому \"src/api/*\" покрывает src/api/router.ts, но не файлы в src/api/v2/orders/. Паттерн \"src/api/**/*\" рекурсивно совпадает с файлами на любой глубине, именно такой вид гайд приводит в примерах (src/api/**/*, terraform/**/*). После исправления правило будет загружаться при редактировании всех 37 обработчиков.",
+    "why_wrong_ru": {
+      "A": "Ограничения по глубине у path-scoped правил нет, нужен корректный glob, а копии CLAUDE.md в каждой подпапке приведут к дублированию.",
+      "B": "Формат массива paths: [\"...\"] корректен, как в примерах гайда, проблема в самом паттерне, а не в синтаксисе списка.",
+      "D": "Path-scoped правила подгружаются при работе с подходящими файлами, а не один раз, и напоминание в промпте не исправит неверный паттерн."
+    },
+    "takeaway_ru": "Одна * это один уровень пути, ** это любая глубина: src/api/**/*."
+  },
+  {
+    "id": "d3-07",
+    "domain": 3,
+    "task": "3.4",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer uses Claude Code for a three-phase task on a legacy billing system: discover every place invoice totals are computed, design a consolidation, then implement it. During discovery Claude ran more than 40 Grep and Read calls in the main conversation. By the design phase the context was nearly full, and Claude began citing \"typical billing patterns\" instead of the specific classes it had found earlier. What should the engineer do differently for the discovery phase?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Run discovery via the Explore subagent so verbose search output stays isolated and only a summary returns to the main conversation."
+      },
+      {
+        "key": "B",
+        "text": "Keep discovery in the main conversation but ask Claude to keep every reply under 200 words so that it consumes less context."
+      },
+      {
+        "key": "C",
+        "text": "Switch to a model configuration with a larger context window so all discovery output fits alongside the design and implementation."
+      },
+      {
+        "key": "D",
+        "text": "Skip the separate discovery phase and give Claude the consolidation design directly, letting it locate relevant files while implementing."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Explore subagent предназначен для изоляции многословного вывода фазы discovery: он выполняет поиск и чтение файлов в своём контексте и возвращает в основной диалог только сводку. Это предотвращает исчерпание контекстного окна в многофазных задачах, и на фазах дизайна и реализации основной контекст занят конкретными находками. Ссылки на «типичные паттерны» вместо найденных классов являются классическим признаком деградации контекста.",
+    "why_wrong_ru": {
+      "B": "Контекст забивают результаты 40+ вызовов Grep и Read, а не длина ответов Claude, поэтому лимит на слова почти ничего не даёт.",
+      "C": "Большее окно лишь откладывает проблему, деградация внимания на длинном контексте остаётся.",
+      "D": "Без исследования дизайн строится на догадках, что ведёт к дорогостоящей переделке."
+    },
+    "takeaway_ru": "Многословный discovery → Explore subagent, в основной контекст попадает только сводка."
+  },
+  {
+    "id": "d3-08",
+    "domain": 3,
+    "task": "3.4",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Two tickets land in your sprint. Ticket 1: a production TypeError whose stack trace points to a missing null check on line 112 of invoice_formatter.py. Ticket 2: replace the deprecated requests-based HTTP client with httpx across 48 files, where modules use sessions, custom retries, and connection pooling in different ways and the team has not yet decided between sync and async usage. How should you use Claude Code for these tickets?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Plan mode for both tickets, so every change, even the one-line null check, is designed and reviewed before any edit is made."
+      },
+      {
+        "key": "B",
+        "text": "Direct execution for both tickets, letting Claude migrate the 48 files incrementally and fix breakages as the tests reveal them."
+      },
+      {
+        "key": "C",
+        "text": "Plan mode for Ticket 1 to confirm the root cause first, then direct execution for Ticket 2 because the target library is already chosen."
+      },
+      {
+        "key": "D",
+        "text": "Direct execution for Ticket 1; for Ticket 2, plan mode to explore usages and design the approach, then direct execution of the plan."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Однофайловый баг с понятным стектрейсом это хорошо очерченное изменение, для него подходит direct execution. Миграция библиотеки на 48 файлов с разными паттернами использования и нерешённым выбором sync/async имеет архитектурные последствия, поэтому сначала нужен plan mode для безопасного исследования и проектирования. Гайд прямо описывает такую комбинацию: plan mode для исследования, затем direct execution для реализации выбранного подхода.",
+    "why_wrong_ru": {
+      "A": "Plan mode для однострочного исправления с ясной причиной добавляет накладные расходы без пользы.",
+      "B": "Без предварительного плана решения про sync/async и работу с сессиями будут приниматься хаотично, что ведёт к дорогой переделке 48 файлов.",
+      "C": "Режимы перепутаны: простой фикс не требует плана, а выбор целевой библиотеки не снимает архитектурных решений миграции."
+    },
+    "takeaway_ru": "Ясный однофайловый фикс → direct execution. Миграция 45+ файлов → plan mode, затем исполнение."
+  },
+  {
+    "id": "d3-09",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A backend developer must add a caching layer in front of the pricing service, whose data is updated by three different upstream jobs. She has never designed a cache before. Her first attempt, asking Claude Code to \"add Redis caching to getPrice\", produced code that served stale prices for up to an hour after promotions ended. Before the next attempt, what is the most effective way to use Claude?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Ask Claude to implement the most widely used caching pattern for pricing data, then fix stale-price defects as QA reports them."
+      },
+      {
+        "key": "B",
+        "text": "Write a detailed specification herself listing the cache requirements, and instruct Claude to follow it exactly without deviation."
+      },
+      {
+        "key": "C",
+        "text": "Ask Claude to interview her first, asking about invalidation triggers, staleness tolerance, and failure modes before writing code."
+      },
+      {
+        "key": "D",
+        "text": "Ask Claude to implement it again and attach a self-rated confidence score to each design decision so she can review the weak ones."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Interview pattern: Claude сначала задаёт вопросы, чтобы выявить соображения, которые разработчик мог не предусмотреть. Гайд приводит именно этот пример: стратегии инвалидации кэша и режимы отказа в незнакомой области, до начала реализации. Корень проблемы здесь в том, что требования к инвалидации при обновлениях от трёх upstream-джобов никто не проговорил.",
+    "why_wrong_ru": {
+      "A": "Типовой паттерн без учёта конкретных источников обновлений воспроизведёт ту же проблему, а ловить её на QA дорого.",
+      "B": "Без опыта в кэшировании она не знает, какие требования важны, поэтому её спецификация упустит те же вопросы инвалидации.",
+      "D": "Самооценка уверенности модели плохо откалибрована и не выявляет вопросы, которые никто не задал."
+    },
+    "takeaway_ru": "Незнакомая область → пусть Claude сначала проинтервьюирует тебя, потом пишет код."
+  },
+  {
+    "id": "d3-10",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You are iterating with Claude Code on a customer-data migration script. A dry run on 50,000 rows reveals three problems: rows with a null middle_name crash the name parser; the deduplication step builds its key from the parsed name, so any change to null handling changes which rows get merged; and log lines use local time instead of UTC. How should you structure your next messages to Claude?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Fix the null-handling crash in one message and verify it, then address deduplication in a follow-up message so each change stays isolated."
+      },
+      {
+        "key": "B",
+        "text": "Describe the null-handling and dedup problems in one message with sample rows and expected output; fix the log timestamps separately."
+      },
+      {
+        "key": "C",
+        "text": "Send one short message asking Claude to make the script robust to all edge cases, then rerun the dry run until no errors remain."
+      },
+      {
+        "key": "D",
+        "text": "Restart in plan mode and have Claude redesign the entire migration architecture before it touches any of the three reported problems."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Когда исправления взаимодействуют, их описывают в одном подробном сообщении: изменение обработки null напрямую меняет ключи дедупликации, и раздельные итерации будут ломать друг друга. Конкретные строки с ожидаемым результатом, включая null, это самый точный способ задать поведение на граничных случаях. Независимую проблему с UTC в логах разумно исправить отдельной итерацией.",
+    "why_wrong_ru": {
+      "A": "Последовательная итерация подходит для независимых проблем, а здесь фикс null меняет поведение дедупликации, и второй шаг перепишет первый.",
+      "C": "Расплывчатая просьба обработать «все edge cases» не задаёт ожидаемого поведения, а прогон до отсутствия ошибок не проверяет правильность слияния.",
+      "D": "Три локальные проблемы не требуют перепроектирования всей миграции, это лишняя работа вместо точного фидбэка."
+    },
+    "takeaway_ru": "Взаимосвязанные баги шли одним сообщением с примерами, независимые по очереди."
+  },
+  {
+    "id": "d3-11",
+    "domain": 3,
+    "task": "3.6",
+    "scenario": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI job runs claude -p with a review prompt and parses the Markdown response with regular expressions to post inline PR comments. Over 2 weeks, 7% of runs produced output the parser could not handle (renamed headings, findings without a line number), so those PRs received no comments. You need machine-parseable findings with file, line, severity, and message for each issue. What is the most reliable fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Append \"Respond only with valid JSON containing file, line, severity, and message\" to the review prompt and parse it with JSON.parse."
+      },
+      {
+        "key": "B",
+        "text": "Add a second claude -p step that converts the first step's Markdown review into JSON before the comment-posting script runs."
+      },
+      {
+        "key": "C",
+        "text": "Keep the Markdown format but retry the review up to three times whenever the regex parser fails to extract every finding."
+      },
+      {
+        "key": "D",
+        "text": "Run claude -p with --output-format json and a --json-schema defining the finding fields, then post comments from the parsed output."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Флаги --output-format json и --json-schema предназначены для принудительного структурированного вывода в CI. Схема задаёт поля находки (file, line, severity, message), и скрипт получает машинно-разбираемый результат, пригодный для автоматической публикации inline-комментариев к PR. Это детерминированная настройка CLI вместо надежды на то, что модель соблюдёт инструкцию о формате.",
+    "why_wrong_ru": {
+      "A": "Инструкция в промпте вероятностна и не гарантирует ни валидный JSON, ни наличие обязательных полей.",
+      "B": "Второй шаг удваивает вызовы и сам может выдать неверный формат, проблема переносится, а не решается.",
+      "C": "Ретраи тратят ресурсы и повторяют ту же вероятностную ошибку формата, не устраняя её причину."
+    },
+    "takeaway_ru": "Находки для inline-комментариев → --output-format json + --json-schema."
+  },
+  {
+    "id": "d3-12",
+    "domain": 3,
+    "task": "3.6",
+    "scenario": 5,
+    "type": "multi",
+    "select": 2,
+    "stem": "A nightly CI job uses Claude Code to propose unit tests for recently changed modules. After a month, developers reject 70% of the suggestions: many duplicate scenarios the existing test suite already covers, others test trivial getters, and generated tests often build data by hand instead of using the team's shared fixtures in tests/fixtures/. Which TWO changes would most improve the quality of the generated tests? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add \"Only generate high-value, non-duplicate tests\" to the prompt so Claude filters its own suggestions before returning them."
+      },
+      {
+        "key": "B",
+        "text": "Include the existing test files for each changed module in the context, so Claude can see which scenarios are already covered."
+      },
+      {
+        "key": "C",
+        "text": "Run the job through the Message Batches API so each module gets a separate, isolated request with its own fresh context."
+      },
+      {
+        "key": "D",
+        "text": "Post-process suggestions with a script that drops any test whose name closely matches an existing test name in the repository."
+      },
+      {
+        "key": "E",
+        "text": "Document the testing standards, what counts as a valuable test, and the available fixtures in the project CLAUDE.md used by CI."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Гайд описывает два навыка ровно под эти симптомы: передавать существующие тестовые файлы в контекст, чтобы генерация не предлагала уже покрытые сценарии, и документировать стандарты тестирования, критерии ценного теста и доступные фикстуры в CLAUDE.md. CLAUDE.md является механизмом передачи проектного контекста в Claude Code, запущенный из CI. Вместе это убирает дубли, тривиальные тесты и ручную сборку тестовых данных.",
+    "why_wrong_ru": {
+      "A": "Общая инструкция «только ценные тесты» не даёт Claude ни знания о существующих тестах, ни критериев ценности, поэтому точность почти не растёт.",
+      "C": "Batches API меняет способ доставки запросов и стоимость, но не добавляет недостающий контекст о тестах и фикстурах.",
+      "D": "Фильтр по совпадению имён работает постфактум и ненадёжно: дублирующий сценарий может называться иначе, а уникальный похоже."
+    },
+    "takeaway_ru": "Генерация тестов: существующие тесты в контекст, стандарты и фикстуры в CLAUDE.md."
+  }
+]

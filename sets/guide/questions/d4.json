@@ -1,0 +1,456 @@
+[
+  {
+    "id": "d4-01",
+    "domain": 4,
+    "task": "4.1",
+    "scenario": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI review prompt includes the instruction \"Check that code comments are accurate.\" Over two weeks, developers dismiss 64% of comment-related findings: most flag wording, outdated phrasing, or missing detail in comments that still correctly describe what the code does. The team already appended \"Be conservative and only report high-confidence findings,\" and the dismissal rate barely changed. What is the most effective next change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Require a 0–1 confidence score on each comment finding and post only the findings that the model scores above 0.85."
+      },
+      {
+        "key": "B",
+        "text": "Strengthen the wording to \"Be extremely conservative; report a comment issue only if you are certain it matters.\""
+      },
+      {
+        "key": "C",
+        "text": "Replace it with an explicit criterion: flag a comment only if its claimed behavior contradicts the code."
+      },
+      {
+        "key": "D",
+        "text": "Run the comment check on a larger model with a bigger context window so it can judge comment quality repo-wide."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Инструкция «проверь, что комментарии точны» не говорит, что именно считать проблемой, поэтому модель флагует формулировки и стиль. Гайд прямо противопоставляет её явному критерию: флаговать комментарий, только если заявленное в нём поведение противоречит реальному поведению кода. Общие указания вроде «be conservative» или «only report high-confidence findings» не повышают precision по сравнению с конкретными категориальными критериями, и логи команды это подтвердили.",
+    "why_wrong_ru": {
+      "A": "Фильтр по самооценке уверенности не заменяет критерия: модель уверенно флагует то, что вообще не должно считаться проблемой.",
+      "B": "Это та же расплывчатая инструкция в усиленной форме, а она уже показала, что почти не влияет на долю ложных срабатываний.",
+      "D": "Причина в нечётком критерии, а не в мощности модели или размере контекста, поэтому крупная модель будет флаговать то же самое."
+    },
+    "takeaway_ru": "Не «будь осторожен», а явный критерий: что флаговать и что пропускать."
+  },
+  {
+    "id": "d4-02",
+    "domain": 4,
+    "task": "4.1",
+    "scenario": 5,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your automated PR reviewer reports findings in four categories: security, correctness, performance, and naming style. Telemetry shows developers dismiss 81% of naming-style findings, and interviews reveal they have started skimming past security findings too. Separately, the same unchecked null dereference was labeled \"critical\" in one PR and \"low\" in another during the same week. Which TWO changes best address these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add \"Be consistent when assigning severity and avoid low-value style remarks\" to the review prompt."
+      },
+      {
+        "key": "B",
+        "text": "Temporarily disable the naming-style category while its criteria are rewritten; keep the others active."
+      },
+      {
+        "key": "C",
+        "text": "Ask the model for a self-rated confidence score on each finding and hide all findings scored below 0.7."
+      },
+      {
+        "key": "D",
+        "text": "Pause the entire reviewer until the false positive rate drops below 10% in every one of the four categories."
+      },
+      {
+        "key": "E",
+        "text": "Define explicit severity criteria in the prompt, with concrete code examples for each severity level."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Категория с высоким false positive rate подрывает доверие и к точным категориям, поэтому её временно отключают, пока переписывают для неё промпт, а security и correctness продолжают работать (B). Разброс severity лечится явными критериями для каждого уровня с конкретными примерами кода (E): модель сравнивает находку с эталоном, а не угадывает уровень. Оба приёма прямо названы в task statement 4.1.",
+    "why_wrong_ru": {
+      "A": "Просьба «быть последовательным» не объясняет, чем critical отличается от low, и не убирает шумную категорию.",
+      "C": "Самооценка уверенности плохо откалибрована и не решает ни проблему шумной категории, ни разброс severity.",
+      "D": "Остановка всего ревьюера отключает и точные security-находки, хотя шум идёт от одной категории."
+    },
+    "takeaway_ru": "Шумную категорию временно выключи; severity задай примерами кода для каждого уровня."
+  },
+  {
+    "id": "d4-03",
+    "domain": 4,
+    "task": "4.2",
+    "scenario": 6,
+    "type": "single",
+    "select": 1,
+    "stem": "Your pipeline extracts `cited_works` and `methodology` from research papers using an extraction tool with a JSON schema. The prompt already explains in detail that citations may appear inline or in a reference list, and that methodology may sit in a dedicated section or be embedded in the results. Still, 17% of papers with a numbered bibliography return null for `cited_works`, and papers without a \"Methods\" heading often return null for `methodology`. What is the most effective improvement?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add few-shot examples of correct extraction from varied paper structures, e.g. inline citations vs a bibliography."
+      },
+      {
+        "key": "B",
+        "text": "Mark `cited_works` and `methodology` as required in the schema so the model can no longer return null for them."
+      },
+      {
+        "key": "C",
+        "text": "Expand the written instructions with an exhaustive list of every heading name and citation style papers might use."
+      },
+      {
+        "key": "D",
+        "text": "Add a retry that resubmits any extraction with null fields, appending the message \"these fields must not be empty.\""
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Подробные инструкции уже есть, а null-извлечение сохраняется: это типичный случай, когда few-shot примеры работают лучше прозы. Гайд рекомендует примеры корректного извлечения из документов с разной структурой (inline citations vs bibliography, отдельная секция методологии vs детали внутри текста), чтобы убрать пустые значения полей и снизить галлюцинации. Модель обобщает показанные примеры на новые варианты оформления.",
+    "why_wrong_ru": {
+      "B": "Required-поле подталкивает модель выдумывать значения там, где их нет, а проблема здесь в том, что модель не находит существующие данные.",
+      "C": "Ещё больше прозы не помогает, когда детальные инструкции уже дают непоследовательный результат; нужен пример, а не перечень.",
+      "D": "Повтор с общей фразой не показывает, где искать данные, и давит на модель заполнить поле даже там, где его действительно нет."
+    },
+    "takeaway_ru": "Null на разных форматах документов → few-shot примеры именно с этими форматами."
+  },
+  {
+    "id": "d4-04",
+    "domain": 4,
+    "task": "4.2",
+    "scenario": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI reviewer keeps flagging intentional patterns, such as `catch` blocks that deliberately swallow `AbortError` during request cancellation and duplicated SQL in versioned migration files. The team added 35 explicit \"do not flag\" exceptions to the prompt. Listed cases are now skipped, but slight variants of the same patterns are still flagged in about 20% of PRs, and developers dismiss them. What is the most effective improvement?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep extending the exception list whenever developers dismiss a new variant, grouping the entries by file type."
+      },
+      {
+        "key": "B",
+        "text": "Add a post-processing filter that drops any finding whose text closely matches a previously dismissed finding."
+      },
+      {
+        "key": "C",
+        "text": "Add the instruction \"Use good judgment and do not flag patterns that appear to be intentional\" to the prompt."
+      },
+      {
+        "key": "D",
+        "text": "Replace much of the list with 2–4 ambiguous code examples, each explaining why it is or is not an issue."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Список исключений покрывает только заранее перечисленные случаи, поэтому новые вариации снова флагуются. 2–4 целевых few-shot примера для неоднозначных паттернов, где объяснено, почему код приемлем или почему это реальная проблема, передают модели сам критерий решения, и она обобщает его на новые паттерны. Гайд называет такие примеры способом снизить false positives, сохранив способность к обобщению.",
+    "why_wrong_ru": {
+      "A": "Расширение списка лечит только перечисленные случаи и раздувает промпт, не передавая модели принцип решения.",
+      "B": "Текстовое совпадение с отклонёнными находками хрупкое и может скрыть настоящий баг с похожей формулировкой.",
+      "C": "«Используй здравый смысл» это расплывчатая инструкция без критерия, она не показывает, что считать намеренным."
+    },
+    "takeaway_ru": "Показывай рассуждение на 2–4 неоднозначных примерах вместо длинного списка исключений."
+  },
+  {
+    "id": "d4-05",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 6,
+    "type": "single",
+    "select": 1,
+    "stem": "Your extraction service tells Claude in the system prompt to \"respond only with JSON matching this schema.\" About 4% of responses fail to parse because of trailing commentary or unescaped quotes. You are migrating to tool use and have defined three extraction tools, `extract_invoice`, `extract_receipt`, and `extract_contract`, each with its own JSON schema. The type of each incoming document is not known in advance. Which configuration guarantees a structured result for every document?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Use the tools with `tool_choice: \"auto\"` and keep the JSON-in-text instruction as a fallback when no tool is called."
+      },
+      {
+        "key": "B",
+        "text": "Use the tools with `tool_choice: \"any\"`, so the model must call one extraction tool and picks the schema that fits."
+      },
+      {
+        "key": "C",
+        "text": "Force `{\"type\": \"tool\", \"name\": \"extract_invoice\"}` and map receipt and contract fields from the invoice schema later."
+      },
+      {
+        "key": "D",
+        "text": "Keep JSON-in-text but add a repair step that strips non-JSON text and retries parsing up to three times."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Tool use с JSON-схемами самый надёжный способ получить вывод, соответствующий схеме, без синтаксических ошибок JSON. `tool_choice: \"any\"` обязывает модель вызвать какой-то инструмент, но оставляет ей выбор схемы, а это и нужно при нескольких схемах и заранее неизвестном типе документа. При `\"auto\"` модель вправе ответить текстом, а forced-выбор фиксирует один конкретный инструмент.",
+    "why_wrong_ru": {
+      "A": "При `\"auto\"` модель может вернуть текст вместо вызова инструмента, а fallback на JSON-в-тексте возвращает исходные ошибки парсинга.",
+      "C": "Forced-выбор `extract_invoice` загоняет чеки и договоры в чужую схему, из-за чего поля теряются или искажаются.",
+      "D": "Ремонт текста лечит симптомы: JSON-в-тексте остаётся источником синтаксических ошибок, которые tool use устраняет."
+    },
+    "takeaway_ru": "Несколько схем и неизвестный тип документа → tool_use с tool_choice \"any\"."
+  },
+  {
+    "id": "d4-06",
+    "domain": 4,
+    "task": "4.3",
+    "scenario": 6,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your contract-extraction tool schema marks every field as required, and `contract_type` is an enum of `[\"nda\", \"msa\", \"sow\", \"lease\"]`. Audits reveal two problems. When a contract has no renewal clause, `renewal_notice_days` still contains plausible numbers such as 30 or 60. Licensing agreements, and documents that mix two contract types, are forced into one of the four enum values. Which TWO schema changes address these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Make `renewal_notice_days` optional and nullable, so the model can return null when no renewal clause exists."
+      },
+      {
+        "key": "B",
+        "text": "Add a prompt instruction telling the model never to guess values, while keeping every field required in the schema."
+      },
+      {
+        "key": "C",
+        "text": "Add an `\"other\"` value with a `contract_type_detail` string, plus `\"unclear\"` for genuinely ambiguous documents."
+      },
+      {
+        "key": "D",
+        "text": "Force the extraction tool on every request with `tool_choice: {\"type\": \"tool\", \"name\": \"extract_contract\"}`."
+      },
+      {
+        "key": "E",
+        "text": "Add a validation retry that resubmits any extraction whose `renewal_notice_days` falls outside the range 1–365."
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "explanation_ru": "Если поле required, а в документе информации нет, модель выдумывает правдоподобное значение, поэтому такие поля делают optional/nullable (A). Закрытый enum насильно втискивает новые и неоднозначные документы в существующие категории; значение \"other\" с полем-детализацией и значение \"unclear\" для неоднозначных случаев делают классификацию расширяемой и честной (C). Оба приёма относятся к проектированию схем из task statement 4.3.",
+    "why_wrong_ru": {
+      "B": "Инструкция в промпте конфликтует со схемой, которая всё равно требует значение, и остаётся вероятностной.",
+      "D": "Forced `tool_choice` гарантирует вызов инструмента, но схема по-прежнему требует значение и не допускает новых категорий.",
+      "E": "Выдуманные 30 и 60 попадают в диапазон 1–365, а повтор не создаст в документе отсутствующую информацию."
+    },
+    "takeaway_ru": "Данных в источнике нет → nullable-поле; новые категории → \"other\" + detail и \"unclear\"."
+  },
+  {
+    "id": "d4-07",
+    "domain": 4,
+    "task": "4.4",
+    "scenario": 6,
+    "type": "single",
+    "select": 1,
+    "stem": "When Pydantic validation fails, your pipeline resends the original extraction prompt unchanged, up to three times. Analysis of 1,200 failures shows two groups. 70% are format errors, such as `invoice_date` returned as \"14.03.2025\" where ISO 8601 is required, and they mostly repeat across retries. 30% are a missing `payment_terms` on invoices that only say \"per Master Agreement MSA-2231,\" a document the pipeline never receives. How should you redesign the retry logic?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Raise the retry limit to six attempts and add \"double-check every field against the schema\" to the prompt."
+      },
+      {
+        "key": "B",
+        "text": "Apply one feedback retry to all failures, sending the specific validation errors and asking for every missing field."
+      },
+      {
+        "key": "C",
+        "text": "Retry format errors with the document, failed output, and exact errors; null absent-source fields for review."
+      },
+      {
+        "key": "D",
+        "text": "Default `payment_terms` to \"NET 30\" so it always validates, and keep the unchanged retries for date errors."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Повтор того же промпта не сообщает модели, что не так, поэтому ошибки формата повторяются. Retry-with-error-feedback отправляет исходный документ, неудачное извлечение и конкретные ошибки валидации, и это хорошо исправляет ошибки формата и структуры. Но если значение есть только во внешнем документе, которого нет на входе, никакой повтор его не извлечёт: такое поле помечают null и отправляют на review (или подгружают нужный документ), а не тратят попытки.",
+    "why_wrong_ru": {
+      "A": "Больше попыток без информации об ошибке повторяет ту же ошибку и тратит ресурсы на поля, которых нет в источнике.",
+      "B": "Feedback помогает для формата, но требование заполнить отсутствующее в источнике поле ведёт к бесполезным повторам или выдуманным значениям.",
+      "D": "Значение по умолчанию это выдуманные данные, а неизменённые повторы по-прежнему не сообщают модели, что именно исправить."
+    },
+    "takeaway_ru": "Retry с ошибками валидации чинит формат; если данных нет в источнике, retry бесполезен."
+  },
+  {
+    "id": "d4-08",
+    "domain": 4,
+    "task": "4.4",
+    "scenario": 6,
+    "type": "single",
+    "select": 1,
+    "stem": "After moving invoice extraction to tool use with a strict JSON schema, malformed JSON disappeared. However, finance reports that 3% of extracted invoices have line items whose amounts do not add up to the extracted `total`. Some are model misreads; others are genuine arithmetic errors in the source invoices. Downstream systems currently cannot tell these cases apart. Which schema and validation change best addresses this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Extract `stated_total` and a computed `calculated_total` with a `conflict_detected` flag; validate before loading."
+      },
+      {
+        "key": "B",
+        "text": "Tighten the schema with `minimum: 0` and `multipleOf: 0.01` on every amount field so invalid totals cannot be produced."
+      },
+      {
+        "key": "C",
+        "text": "Overwrite `total` with the sum of the line items in post-processing so downstream always receives consistent invoices."
+      },
+      {
+        "key": "D",
+        "text": "Instruct the model in the system prompt to make sure the line items add up to the total before it calls the tool."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Строгая JSON-схема через tool use устраняет синтаксические ошибки, но не семантические: строки могут не сходиться с итогом. Гайд предлагает self-correction: извлекать `stated_total` как написано в документе и `calculated_total` как сумму строк, добавляя `conflict_detected` для противоречивых исходных данных. Тогда ошибку чтения можно отправить на retry с feedback, а реальную ошибку в счёте на human review, и downstream видит разницу.",
+    "why_wrong_ru": {
+      "B": "Ограничения на формат чисел проверяют отдельные значения, но не то, сходятся ли строки с итогом.",
+      "C": "Перезапись итога скрывает реальные ошибки в исходных счетах и теряет значение, указанное в документе.",
+      "D": "Требование подогнать цифры заставит модель искажать данные ради сходимости и замаскирует конфликты в источнике."
+    },
+    "takeaway_ru": "Схема ловит синтаксис, а не смысл: извлекай stated и calculated total плюс conflict_detected."
+  },
+  {
+    "id": "d4-09",
+    "domain": 4,
+    "task": "4.5",
+    "scenario": 6,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team extracts data from supplier documents with the Message Batches API to get its 50% cost savings. Documents arrive continuously, and the business requires every document's extraction to be available within 30 hours of arrival. Batch processing can take up to 24 hours, with no guaranteed latency SLA. Currently you submit one batch per day at midnight. Which submission strategy meets the requirement while keeping batch pricing?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep the nightly batch but have downstream systems poll more often, so results are picked up as soon as they finish."
+      },
+      {
+        "key": "B",
+        "text": "Submit a batch every 12 hours, since half-day windows plus processing keep most documents within the requirement."
+      },
+      {
+        "key": "C",
+        "text": "Move all documents to the synchronous API, because the Message Batches API cannot satisfy any fixed deadline."
+      },
+      {
+        "key": "D",
+        "text": "Submit a batch every 4 hours, so the worst-case wait plus 24-hour processing stays under 30 hours with margin."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Худшая задержка складывается из ожидания до ближайшей отправки и до 24 часов обработки в Message Batches API, у которого нет гарантированного SLA. При ежедневной отправке это до 48 часов, при отправке раз в 12 часов до 36. Окно в 4 часа даёт максимум около 28 часов, то есть укладывается в 30 часов с запасом и сохраняет 50% экономии; именно такой расчёт приведён в гайде.",
+    "why_wrong_ru": {
+      "A": "Частый polling не ускоряет обработку: документ всё равно ждёт до суток до отправки и до 24 часов в батче.",
+      "B": "12 часов ожидания плюс 24 часа обработки дают до 36 часов, это нарушает требование в 30 часов.",
+      "C": "Batch API укладывается в срок при правильной частоте отправки, а синхронный режим без необходимости лишает 50% экономии."
+    },
+    "takeaway_ru": "Окно отправки + 24 ч обработки ≤ SLA: при 30 ч отправляй каждые 4 ч."
+  },
+  {
+    "id": "d4-10",
+    "domain": 4,
+    "task": "4.5",
+    "scenario": 6,
+    "type": "single",
+    "select": 1,
+    "stem": "You submitted a Message Batches API job of 5,000 legal documents for overnight extraction. When it completes, 4,860 requests succeeded and 140 failed, most of them because the documents exceeded the context limit. The results were returned in a different order from the one in which requests were submitted. What is the best way to handle the failures?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Resubmit the entire 5,000-document batch with a higher `max_tokens`, then keep the latest result for each document."
+      },
+      {
+        "key": "B",
+        "text": "Identify the failed requests by `custom_id`, split those oversized documents into chunks, and resubmit only them."
+      },
+      {
+        "key": "C",
+        "text": "Match results to documents by their position in the output, then reprocess the 140 failures via the synchronous API."
+      },
+      {
+        "key": "D",
+        "text": "Resubmit the 140 failures unchanged, prompting the model to call a `split_document` tool mid-request when needed."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "`custom_id` нужен, чтобы сопоставлять запросы и ответы батча, так как порядок результатов не гарантирован. Правильная обработка сбоев: найти упавшие запросы по `custom_id`, изменить их с учётом причины (здесь разбить слишком большие документы на чанки) и отправить повторно только их. Так сохраняются 4 860 успешных результатов и 50% экономии.",
+    "why_wrong_ru": {
+      "A": "Перезапуск всего батча оплачивает уже успешные документы заново, а `max_tokens` ограничивает вывод, а не размер входного документа.",
+      "C": "Порядок результатов не гарантирован, сопоставление по позиции перепутает документы, а неизменённые большие документы снова упадут.",
+      "D": "Batch API не поддерживает multi-turn tool calling внутри одного запроса, а неизменённые документы снова превысят лимит."
+    },
+    "takeaway_ru": "Сбои батча: найди по custom_id, устрани причину, отправь повторно только их."
+  },
+  {
+    "id": "d4-11",
+    "domain": 4,
+    "task": "4.6",
+    "scenario": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "In your CI pipeline, a Claude Code session generates a fix for a failing test, and the same session is then prompted to \"critically review your changes before opening the PR.\" Over a month, human reviewers found subtle bugs in 22% of these PRs that the self-review had approved. A teammate proposes enabling extended thinking for the review step. What is the most effective change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Review in a second, independent Claude instance given the diff and requirements, not the generator's reasoning."
+      },
+      {
+        "key": "B",
+        "text": "Keep the same session but enable extended thinking for the review step, so it reasons more deeply before approving."
+      },
+      {
+        "key": "C",
+        "text": "Strengthen the self-review prompt to \"assume your code contains at least one bug and find it before approving.\""
+      },
+      {
+        "key": "D",
+        "text": "Have the same session review its changes three times and block the PR only when two of the three reviews agree."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Сессия, которая сгенерировала код, сохраняет свой контекст рассуждений и с меньшей вероятностью ставит под сомнение собственные решения. Независимый экземпляр Claude без этого контекста эффективнее ловит тонкие ошибки, чем инструкции на self-review или extended thinking в той же сессии. Поэтому ревью делает отдельный instance, который получает diff и требования.",
+    "why_wrong_ru": {
+      "B": "Extended thinking в той же сессии углубляет то же самое рассуждение и сохраняет предвзятость генератора.",
+      "C": "Более жёсткая формулировка self-review не убирает контекст генерации, из-за которого модель не замечает своих ошибок.",
+      "D": "Три прохода в одном контексте повторяют одну и ту же предвзятость, а голосование ещё и подавляет нерегулярно находимые баги."
+    },
+    "takeaway_ru": "Ревьюит не автор: отдельный instance без контекста генерации."
+  },
+  {
+    "id": "d4-12",
+    "domain": 4,
+    "task": "4.6",
+    "scenario": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI reviewer produces about 150 findings per day across the monorepo, and the two senior engineers who triage them can check only about 40. Posting everything has led developers to ignore the bot, while posting only \"critical\" findings has let real medium-severity bugs through. You want to direct limited human attention to the findings where it matters most. Which approach best fits?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Ask the model for one overall confidence rating per PR, and send whole PRs below a fixed threshold to the engineers."
+      },
+      {
+        "key": "B",
+        "text": "Route findings by file ownership, so each finding goes to the code owner's queue instead of the two engineers."
+      },
+      {
+        "key": "C",
+        "text": "Run three identical review passes per PR and send to humans only the findings that appear in all three runs."
+      },
+      {
+        "key": "D",
+        "text": "Add a per-finding confidence pass, calibrate thresholds on labeled past findings, and route low scores to humans."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Гайд описывает verification pass, в котором модель выдаёт confidence для каждой находки, чтобы откалиброванно маршрутизировать ревью. Сама по себе самооценка плохо откалибрована, поэтому пороги настраивают на размеченном наборе прошлых находок (принятых и отклонённых). Так ограниченное время двух инженеров уходит на сомнительные находки, а не на всё подряд и не только на critical.",
+    "why_wrong_ru": {
+      "A": "Одна оценка на весь PR скрывает различия между находками и не откалибрована, поэтому слабые находки в «уверенных» PR проходят без проверки.",
+      "B": "Распределение по владельцам перекладывает тот же объём на других людей, но никак не приоритизирует находки.",
+      "C": "Требование совпадения во всех трёх прогонах отбрасывает реальные баги, которые ловятся нерегулярно, и не решает задачу маршрутизации."
+    },
+    "takeaway_ru": "Confidence на каждую находку + калибровка на размеченных данных → маршрутизация ревью."
+  }
+]

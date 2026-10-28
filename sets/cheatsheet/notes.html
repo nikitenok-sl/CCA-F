@@ -1,0 +1,150 @@
+<div class="notes">
+  <div class="panel wide">
+    <h2>Что в шпаргалке не так</h2>
+    <p class="hint" style="margin:-4px 0 14px">cheatsheet.md сверен с официальным Exam Guide v1.0, документацией Claude Code, Message Batches API и спецификацией MCP. Эти утверждения в вопросы не попали.</p>
+    <ul class="fixes">
+      <li><span class="was">Экзамен стоит $99, прокторинг ProctorFree, результат до 7 рабочих дней</span><span class="is">$125, Pearson VUE (онлайн или центр), pass/fail и балл в отчёте</span></li>
+      <li><span class="was">В банке 8 сценариев, включая Conversational AI и Agentic Tools</span><span class="is">В гайде 6 сценариев, на экзамене 4 случайных из них</span></li>
+      <li><span class="was">Path-scoped rules срабатывают только при чтении, при создании файла не грузятся</span><span class="is">Правило грузится, когда Claude вызывает Read, Write или Edit для подходящего файла</span></li>
+      <li><span class="was">В батче максимум 10 000 запросов</span><span class="is">До 100 000 запросов или 256 MB. Размеры на экзамене не проверяют</span></li>
+      <li><span class="was">MCP prompts контролирует приложение</span><span class="is">Спецификация MCP: tools контролирует модель, resources выбирает приложение, prompts выбирает пользователь (например, slash-команды)</span></li>
+      <li><span class="was">Отказ по бизнес-правилу всегда возвращается с <code>isError: false</code></span><span class="is">В спецификации MCP business logic errors возвращаются с <code>isError: true</code>, гайд выделяет их в отдельную категорию с <code>retriable: false</code>. Не ошибка только пустой результат успешного запроса</span></li>
+      <li><span class="was">Инструменты никогда не объединяют</span><span class="is">Гайд считает объединение допустимым архитектурным решением. Просто это не самый дешёвый первый шаг</span></li>
+      <li><span class="was">Импорт пишется как <code>@import docs/file.md</code></span><span class="is">Синтаксис <code>@docs/file.md</code></span></li>
+      <li><span class="was">Правило в промпте соблюдается в 95–98% случаев</span><span class="is">Цифра из фольклора. Гайд говорит только, что у промпта ненулевой процент отказа</span></li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h2>9 правил выбора ответа</h2>
+    <p class="hint" style="margin:-4px 0 12px">Применять по порядку: решает первое подходящее правило.</p>
+    <ol class="rules9">
+      <li><b>Код гарантирует, промпт предлагает.</b> Деньги, право, compliance решаются hook'ом, а не промптом.</li>
+      <li><b>Цикл останавливает только <code>stop_reason</code>.</b> "end_turn" значит готово, "tool_use" значит выполнить и продолжить. Ни текст, ни число итераций, ни длина ответа сигналом не являются.</li>
+      <li><b>Эскалация по явным критериям, не по эмоциям.</b> Явная просьба о человеке, пробел в политике, нет прогресса.</li>
+      <li><b>Ограничивай, а не добавляй.</b> Меньше инструментов, точнее схема, примеры прицельнее.</li>
+      <li><b>Сначала описания, потом классификаторы. Сначала community, потом свой сервер.</b></li>
+      <li><b>Сабагент не наследует контекст.</b> Всё нужное передаётся явно.</li>
+      <li><b>Ищи корневую причину.</b> Пропущены темы, значит виновата декомпозиция координатора. Выдуманное значение, значит поле надо сделать nullable. Новичок не видит правил, значит они лежат в user-level конфиге.</li>
+      <li><b>Частичный результат лучше никакого.</b> Продолжай с тем, что есть, и помечай пробелы.</li>
+      <li><b>Разные годы не означают конфликт.</b> 2023 и 2024 — это динамика, а не противоречие.</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h2>Чек-лист перед ответом</h2>
+    <ol class="check">
+      <li>Высокие ставки? Нужно программное решение.</li>
+      <li>Вопрос про завершение цикла? Только <code>stop_reason</code>.</li>
+      <li>Вопрос про эскалацию? Только явная просьба или пробел в политике.</li>
+      <li>Вариант добавляет ещё что-то? Скорее всего неверный.</li>
+      <li>Вариант лечит симптом? Ищи корневую причину.</li>
+      <li>Вариант предполагает, что сабагент знает контекст? Неверно.</li>
+      <li>Гарантию обещает промпт? Неверно.</li>
+    </ol>
+    <p class="cutnote" style="margin-top:14px">Если подходят два варианта, выбирай детерминированный, а не вероятностный.</p>
+    <h2 style="margin-top:22px">Ваш прогресс</h2>
+    <div id="n-progress"></div>
+    <div class="actions" id="n-reset"></div>
+  </div>
+  <div class="panel wide">
+    <h2>Ловушки экзамена</h2>
+    <div class="tw"><table class="traps">
+      <thead><tr><th>Экзамен предлагает</th><th>Правильно</th></tr></thead>
+      <tbody>
+        <tr><td>Расширить системный промпт ради compliance</td><td>PreToolUse hook</td></tr>
+        <tr><td>Остановиться после N итераций</td><td><code>stop_reason == "end_turn"</code>. Лимит раундов допустим только как страховка</td></tr>
+        <tr><td>Эскалировать, потому что клиент раздражён</td><td>Признать раздражение и предложить решение. Эскалировать, только если он повторит просьбу</td></tr>
+        <tr><td>Написать свой MCP-сервер для Jira, GitHub, Slack</td><td>Сначала community-сервер</td></tr>
+        <tr><td>Добавить классификатор для выбора инструмента</td><td>Исправить описания инструментов</td></tr>
+        <tr><td>Дать агенту все инструменты для гибкости</td><td>4–5 инструментов под роль</td></tr>
+        <tr><td>Повторить запрос, когда ничего не найдено</td><td>Пустой результат валиден, повтор не нужен</td></tr>
+        <tr><td>Больше агентов ради покрытия</td><td>Исправить декомпозицию координатора</td></tr>
+        <tr><td>Заставить вызвать первый инструмент через промпт</td><td><code>tool_choice: {"type": "tool", "name": "X"}</code></td></tr>
+        <tr><td><code>tool_choice: "any"</code> для вызова конкретного инструмента</td><td>"any" заставляет вызвать какой-то инструмент, а не нужный</td></tr>
+        <tr><td>Командные стандарты в user-level CLAUDE.md</td><td>Project-level CLAUDE.md</td></tr>
+        <tr><td>CLAUDE.md в папке для тестов по всему репо</td><td><code>.claude/rules/</code> с glob <code>**/*.test.ts</code></td></tr>
+        <tr><td>Пошаговые процедуры задачи в CLAUDE.md</td><td>Skill: грузится по требованию</td></tr>
+        <tr><td>Прервать workflow при сбое сабагента</td><td>Продолжить с частичными результатами и пометить пробел</td></tr>
+        <tr><td><code>/compact</code> от деградации контекста</td><td>Сначала вынести конкретику в scratchpad или case facts</td></tr>
+        <tr><td>2023: $1.2B, 2024: $2.1B — это конфликт</td><td>Это рост, а не противоречие</td></tr>
+        <tr><td>«Can I speak to a human?» — это просто вопрос</td><td>Вопросительная форма — тоже явная просьба, эскалировать</td></tr>
+        <tr><td>Эскалировать, потому что клиент звонит третий раз</td><td>Решить, если агент может. Повторяющуюся проблему передать отдельно</td></tr>
+        <tr><td>Цикл доработки без ограничений</td><td>Критерии остановки и жёсткий лимит в 2–3 раунда</td></tr>
+        <tr><td><code>--output-format json</code> для структурированного вывода в CI</td><td>Добавить <code>--json-schema</code>, данные придут в <code>structured_output</code></td></tr>
+        <tr><td><code>stream-json</code> для разбора результата в CI</td><td><code>stream-json</code> нужен для потоковой выдачи. Для CI <code>json</code> + <code>--json-schema</code></td></tr>
+        <tr><td>Поднять порог уверенности, чтобы было меньше ложных срабатываний</td><td>Откалибровать порог на размеченных данных</td></tr>
+        <tr><td>Self-review допустим, если модель уверена</td><td>Отдельный вызов без контекста генерации</td></tr>
+        <tr><td>Подробнее расписать инструкции, чтобы выровнять формат</td><td>Few-shot примеры</td></tr>
+        <tr><td>Повторять, пока не пройдёт валидация отсутствующего поля</td><td>Данных в документе нет, значит поле nullable</td></tr>
+        <tr><td>Batch API для всего ради −50%</td><td>Только для задач, которые могут ждать</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel wide">
+    <h2>Ключевые таблицы шпаргалки</h2>
+    <div class="dkeys">
+      <div><h3>Сессии</h3><ul>
+        <li>Разбирались 2 часа назад, коммитов не было → resume.</li>
+        <li>Вчера, с тех пор смержены 3 PR → новая сессия с резюме.</li>
+        <li>Два расходящихся подхода от общего анализа → <code>fork_session</code>. Если подходы последовательные, просто продолжай сессию.</li>
+        <li>Агент говорит «typical patterns» → вынести находки, затем новая сессия или <code>/compact</code>.</li>
+        <li>Упал посреди задачи, есть manifest.json → продолжить по манифесту.</li>
+        <li>День 2, вчера Auth, сегодня Payments → передать ключевые выводы по Auth, а не всю историю.</li>
+      </ul></div>
+      <div><h3>Hook или промпт</h3><ul>
+        <li>Лог каждого вызова для аудита → hook: в журнале не должно быть пропусков.</li>
+        <li>Проверка личности перед чтением чувствительных данных → hook.</li>
+        <li>Маскировка PII в ответах инструментов → hook.</li>
+        <li>Проверка склада перед обещанием доставки → hook.</li>
+        <li>Сначала поздороваться, ссылаться на источники → промпт: это предпочтение, а не безопасность.</li>
+        <li>Тест: если правило нарушится в 2% случаев, будет ли это серьёзно? Да → hook.</li>
+      </ul></div>
+      <div><h3>Ответы MCP-инструментов</h3><ul>
+        <li>Ничего не найдено при успешном запросе → не ошибка. Не повторять.</li>
+        <li>Несколько совпадений → успешный ответ, нужно уточнение у клиента.</li>
+        <li>Timeout, 503, 429 → <code>isError</code>, transient, retryable, желательно <code>retry_after_seconds</code>.</li>
+        <li>Неверный ввод → validation, исправить ввод. Нет доступа → permission.</li>
+        <li>Сабагент сделал часть работы → status partial: что готово, что нет и можно ли повторить.</li>
+      </ul></div>
+      <div><h3>Схемы извлечения</h3><ul>
+        <li>Поле может отсутствовать → <code>["string","null"]</code>, и в description: «return null, do not estimate».</li>
+        <li>Похожие поля → в description писать, чем поле является и чем НЕ является (due_date и invoice_date).</li>
+        <li>Enum для своих категорий (с "other"). Извлекаемые значения, например vendor_name, оставлять свободной строкой.</li>
+        <li><code>item_1_name</code>, <code>item_2_name</code> → модель выдумает третий. Нужен массив <code>line_items</code>.</li>
+        <li>Авторов может быть несколько → <code>authors</code> массивом.</li>
+        <li>tool_use гарантирует валидный JSON и типы, но не верность значений.</li>
+      </ul></div>
+      <div><h3>Контекст</h3><ul>
+        <li>Признаки деградации: общие слова вместо конкретики, противоречит сказанному раньше, переспрашивает уже известное.</li>
+        <li>Блок фактов (суммы, ID, даты) никогда не сжимается и добавляется к любой стратегии истории.</li>
+        <li>Ключевые находки ставь в начало контекста.</li>
+        <li>Финансы показывай таблицей, новости прозой, технику списком, динамику по датам.</li>
+      </ul></div>
+      <div><h3>Batch API</h3><ul>
+        <li>−50%, до 24 часов, без SLA, без tool calling внутри запроса.</li>
+        <li>Окно отправки = SLA − 24 ч. Если ≤ 0, нужен синхронный API.</li>
+        <li>Результаты сопоставляются по <code>custom_id</code>, порядок не гарантирован.</li>
+        <li>Повторно отправлять только упавшие <code>custom_id</code>.</li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="panel wide">
+    <h2>Шпаргалка «Запомнить» из вопросов</h2>
+    <p class="hint" style="margin:-4px 0 12px">Нажмите на правило, чтобы открыть вопрос.</p>
+    <div id="n-takeaways"></div>
+  </div>
+  <div class="panel">
+    <h2>Шесть сценариев</h2>
+    <div class="scens" id="n-scens" style="grid-template-columns:minmax(0,1fr)"></div>
+  </div>
+  <div class="panel">
+    <h2>Источники</h2>
+    <ul class="srcs">
+      <li><code>cheatsheet.md</code>: community-шпаргалка, по ней построены вопросы.</li>
+      <li><a href="https://everpath-course-content.s3-accelerate.amazonaws.com/instructor%2F6nizmqk8tpzpfjvt6qmmav7rh%2Fpublic%2F1783542750%2FClaude+Certified+Architect+%E2%80%93+Foundations+Exam+Guide.pdf" target="_blank" rel="noopener">Официальный Exam Guide v1.0 (PDF)</a>. При расхождении он главнее.</li>
+      <li><a href="https://code.claude.com/docs/en/memory" target="_blank" rel="noopener">Claude Code: CLAUDE.md, импорты, .claude/rules/</a></li>
+      <li><a href="https://code.claude.com/docs/en/headless" target="_blank" rel="noopener">Claude Code: <code>-p</code>, <code>--output-format</code>, <code>--json-schema</code></a></li>
+      <li><a href="https://platform.claude.com/docs/en/build-with-claude/batch-processing" target="_blank" rel="noopener">Message Batches API</a></li>
+      <li><a href="https://modelcontextprotocol.io/specification/2025-06-18/server/tools" target="_blank" rel="noopener">Спецификация MCP: tools, resources, prompts</a></li>
+    </ul>
+  </div>
+</div>

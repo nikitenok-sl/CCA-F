@@ -1,0 +1,59 @@
+{
+  "name": "Финал",
+  "blurb": "утро экзамена",
+  "title": "Финал CCAR-F",
+  "source": "гайд v1.0 · трудные темы",
+  "sub": "Утро экзамена: шпаргалка на 10–15 минут и 20 вопросов в формате экзамена, чтобы войти в чтение на английском. Начните со вкладки «Шпаргалка», затем пройдите «Тренировку».",
+  "footer": "Неофициальный тренажёр, не связан с Anthropic. Вопросы составлены по task statements Exam Guide v1.0 и не являются вопросами реального экзамена. Прогресс каждого набора хранится только в этом браузере.",
+  "storageKey": "ccarf.final.v1",
+  "defaultView": "notes",
+  "notesTab": "Шпаргалка",
+  "progressLabel": "Точность по доменам",
+  "files": [
+    "final.json"
+  ],
+  "requires": [
+    "signal_ru"
+  ],
+  "flag": null,
+  "group": null,
+  "countNote": "{n} вопр. · финал",
+  "progress": "domain",
+  "cardSource": "Финальный тест по task statements гайда",
+  "examRule": "Все {n} вопросов, по 2 минуты на вопрос, как на экзамене. Вопросы сгруппированы по сценариям.",
+  "exam": {
+    "full": {
+      "label": "Финальный прогон"
+    }
+  },
+  "palette": {
+    "light": {
+      "paper": "#EEF0F5",
+      "dot": "#D6DAE6",
+      "sheet": "#FBFBFD",
+      "ink": "#171A26",
+      "ink-2": "#474D63",
+      "ink-3": "#71778C",
+      "rule": "#CDD2E0",
+      "track": "#E0E4EE",
+      "form": "#3A4A9A",
+      "form-soft": "#DFE3F4",
+      "graphite": "#23263A",
+      "on-fill": "#FBFBFD"
+    },
+    "dark": {
+      "paper": "#0F111A",
+      "dot": "#1B1E2C",
+      "sheet": "#161926",
+      "ink": "#E4E6EF",
+      "ink-2": "#ABB0C4",
+      "ink-3": "#81879C",
+      "rule": "#2B3043",
+      "track": "#242838",
+      "form": "#9DABF0",
+      "form-soft": "#1E2445",
+      "graphite": "#E0E3EE",
+      "on-fill": "#10121B"
+    }
+  }
+}

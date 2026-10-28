@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тренажёр CCAR-F</title>
+<meta name="description" content="Неофициальный тренажёр к Claude Certified Architect – Foundations: пять наборов вопросов, режим тренировки, пробный экзамен и конспекты.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Condensed:wght@500;600;700&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style id="set-theme"></style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <nav class="sets" id="sets" aria-label="Наборы вопросов"></nav>
+    <div class="reset-all" id="reset-all"></div>
+    <div class="formstrip" aria-label="Параметры экзамена">
+      <div class="field"><b>Форма</b><span>CCAR-F · Foundations</span></div>
+      <div class="field"><b>Источник</b><span id="set-source">—</span></div>
+      <div class="field"><b>В наборе</b><span id="bank-count">—</span></div>
+      <div class="field"><b>Экзамен</b><span>60 вопр. · 120 мин</span></div>
+      <div class="field"><b>Порог</b><span>720 / 1000</span></div>
+    </div>
+    <h1 id="set-title">Тренажёр CCAR-F</h1>
+    <p class="sub" id="set-sub">Claude Certified Architect – Foundations. Вопросы на английском, как на экзамене. Разборы на русском.</p>
+    <nav class="tabs" role="tablist" aria-label="Режимы">
+      <button class="tab" role="tab" id="tab-practice" data-view="practice">Тренировка</button>
+      <button class="tab" role="tab" id="tab-exam" data-view="exam">Экзамен</button>
+      <button class="tab" role="tab" id="tab-notes" data-view="notes">Конспект</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="view-practice" role="tabpanel" aria-labelledby="tab-practice">
+      <div class="filters" id="p-filters"></div>
+      <div class="layout">
+        <article class="sheet" id="p-card" aria-live="polite"><div class="empty">Загружаю вопросы…</div></article>
+        <aside class="side">
+          <div class="panel">
+            <p class="lbl">Лист ответов</p>
+            <div class="stat"><span>В этой подборке</span><b id="p-count">—</b></div>
+            <div class="stat"><span>За сессию верно</span><b id="p-session">—</b></div>
+            <div class="grid" id="p-grid" style="margin-top:10px"></div>
+            <div class="legend"><span><i class="ok"></i>верно</span><span><i class="bad"></i>ошибка</span><span><i></i>не отвечен</span></div>
+          </div>
+          <div class="panel">
+            <p class="lbl" id="p-progress-lbl">Точность по доменам</p>
+            <div id="p-progress"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="view-exam" role="tabpanel" aria-labelledby="tab-exam" hidden></section>
+
+    <section id="view-notes" role="tabpanel" aria-labelledby="tab-notes" hidden></section>
+  </main>
+
+  <footer id="set-footer">Неофициальный тренажёр, не связан с Anthropic.</footer>
+</div>
+<script src="data/manifest.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

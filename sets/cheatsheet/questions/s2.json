@@ -1,0 +1,392 @@
+[
+  {
+    "id": "s2-01",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 3,
+    "sheet": "4 Named Tool Description Failure Modes",
+    "type": "single",
+    "select": 1,
+    "stem": "Your document analysis subagent has a single tool, load_source, described as \"Loads a source for analysis. Accepts a URL, a file path, or raw text.\" Traces from 400 runs show that in 17% of calls the subagent passes a PDF download URL as raw text, or a local path as a URL, and then analyzes an error page or a literal string as if it were the paper. Each input kind needs different parsing and returns different fields. What is the most effective fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add few-shot examples to the subagent's prompt showing which kind of value to pass to load_source for each input type."
+      },
+      {
+        "key": "B",
+        "text": "Add an optional source_type parameter (\"url\", \"file\", \"text\") that the subagent sets whenever it is unsure of the input."
+      },
+      {
+        "key": "C",
+        "text": "Split load_source into fetch_web_page, parse_pdf_file, and analyze_text, each with its own input and output contract."
+      },
+      {
+        "key": "D",
+        "text": "Move the subagent to a larger model with stronger reasoning so it infers the intended input type from the context."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Инструмент с размытой областью (URL, файл или текст в одном входе) заставляет модель угадывать границу, и каждая ошибка угадывания ломает разбор. Гайд прямо называет решение: разделить общий инструмент на инструменты под конкретную цель с понятными контрактами входа и выхода. Тогда сам выбор инструмента задаёт тип входа и формат результата.",
+    "why_wrong_ru": {
+      "A": "Few-shot добавляет токены и снижает частоту ошибок, но инструмент остаётся общим, и модель по-прежнему угадывает границу.",
+      "B": "Необязательный параметр делает схему ещё гибче, а нужен более узкий интерфейс: модель всё так же решает, что именно она передаёт.",
+      "D": "Более крупная модель не исправляет плохой интерфейс: причина в размытом контракте инструмента, а не в силе рассуждений."
+    },
+    "takeaway_ru": "Один инструмент на много типов входа → раздели на инструменты под конкретную цель."
+  },
+  {
+    "id": "s2-02",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 1,
+    "sheet": "4 Named Tool Description Failure Modes",
+    "type": "single",
+    "select": 1,
+    "stem": "Your support agent's lookup_order tool returns order details, but the backend team also made it cancel any order whose payment authorization has expired, reasoning that such orders are dead anyway. The description says only \"Retrieves order details by order ID.\" Last month 38 customers who asked \"where is my package?\" later found their pending orders cancelled, and the agent's replies never mentioned it. What is the best fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Document in the description that lookup_order may cancel orders with expired authorization, so the agent can warn customers first."
+      },
+      {
+        "key": "B",
+        "text": "Make lookup_order read-only and move cancellation into a separate cancel_expired_order tool that is described as a write action."
+      },
+      {
+        "key": "C",
+        "text": "Add a system prompt rule that the agent may call lookup_order only when the customer explicitly asks about an order's status."
+      },
+      {
+        "key": "D",
+        "text": "Add a PostToolUse hook that detects a cancellation in the lookup_order result and appends a notice for the agent to relay."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Имя и описание обещают чтение, а инструмент ещё и меняет данные: это скрытый побочный эффект, о котором модель не может рассуждать. Правильно разделить чтение и запись: lookup_order только читает, а отмена живёт в отдельном инструменте, имя и описание которого прямо говорят об изменении заказа. Тогда агент проверяет статус без риска и вызывает отмену только как осознанное действие.",
+    "why_wrong_ru": {
+      "A": "Описание побочного эффекта его не убирает: агент не может узнать статус заказа, не рискуя его отменить.",
+      "C": "Эти клиенты как раз спрашивали о статусе, поэтому вызов всё равно случится и заказ всё равно отменится.",
+      "D": "Hook сообщает об отмене уже после факта, а нежелательное изменение заказа при простом чтении остаётся."
+    },
+    "takeaway_ru": "Инструмент с именем на чтение не должен ничего менять: раздели read и write."
+  },
+  {
+    "id": "s2-03",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 4,
+    "sheet": "4 Named Tool Description Failure Modes",
+    "type": "single",
+    "select": 1,
+    "stem": "Your productivity agent uses an internal MCP tool, find_builds, described as \"Finds CI builds. Accepts a commit SHA, branch name, or PR number.\" A SHA returns one build with per-test results; a branch returns the latest 25 builds as status-only summaries; a PR number returns builds grouped by check name. Asked \"which tests are failing on release/2.4?\", the agent queries by branch and answers \"no failing tests\" in 41% of cases, though summaries never include test results. What should you change first?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Instruct the agent in the system prompt to always query find_builds by commit SHA, since that path returns the most data."
+      },
+      {
+        "key": "B",
+        "text": "Change the server so every input path returns full per-test results for all matching builds, making the output shape identical."
+      },
+      {
+        "key": "C",
+        "text": "Add few-shot examples to the prompt showing the agent answering test-failure questions about several different branches."
+      },
+      {
+        "key": "D",
+        "text": "Document what each input path returns, noting that branch results omit test data and that per-test detail needs a SHA call."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Инструмент принимает три вида входа и на каждый возвращает разную структуру, но описание об этом молчит, поэтому агент принимает отсутствие поля с тестами за отсутствие падений. Гайд требует описывать в инструменте входные форматы, выходные данные и граничные случаи. Достаточно описать форму ответа для каждого пути и способ получить детали, тогда агент сделает второй вызов по SHA.",
+    "why_wrong_ru": {
+      "A": "Запрет на другие пути ломает типичные запросы: инженер спрашивает про ветку, а SHA часто не знает.",
+      "B": "Полные результаты тестов по 25 сборкам раздувают ответ и контекст, и это переделка бэкенда вместо дешёвого первого шага.",
+      "C": "Few-shot идёт после описаний: он тратит токены и учит шаблон, но не объясняет, какие поля есть в каждом варианте ответа."
+    },
+    "takeaway_ru": "Несколько путей входа у инструмента → опиши форму ответа для каждого пути."
+  },
+  {
+    "id": "s2-04",
+    "domain": 2,
+    "task": "2.1",
+    "scenario": 3,
+    "sheet": "Fix Order for Tool Misrouting",
+    "type": "single",
+    "select": 1,
+    "stem": "Your web search subagent chooses between search_news and search_scholarly. Misrouting was 22%, so you rewrote both descriptions with input formats, example queries, and explicit \"Use this when… / Do not use for…\" boundaries. Misrouting fell to 6%, and nearly every remaining error falls into one ambiguous class: queries about new conference results that appear both in press coverage and in published proceedings. What is the most appropriate next step?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add 2–4 few-shot examples of conference-result queries, each explaining why one search tool was chosen over the other."
+      },
+      {
+        "key": "B",
+        "text": "Deploy a routing classifier, trained on logged queries, that selects the search tool before the subagent sees the request."
+      },
+      {
+        "key": "C",
+        "text": "Merge both tools into a single search_sources tool with a source_type parameter that the subagent fills in for each query."
+      },
+      {
+        "key": "D",
+        "text": "Extend both descriptions with the complete lists of news outlets and conference proceedings that each tool indexes."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Порядок исправления ошибочной маршрутизации такой: сначала описания, затем few-shot, и только в крайнем случае классификатор. Описания уже переписаны и дали основной эффект, а остаток сосредоточен в одном неоднозначном классе запросов. Для такого случая лучше всего работают 2–4 целевых примера с рассуждением, почему выбран один инструмент, а не другой.",
+    "why_wrong_ru": {
+      "B": "Классификатор маршрутизации это крайняя мера: он требует данных и инфраструктуры, а дешёвый следующий шаг ещё не пробовали.",
+      "C": "Слияние это более крупная переделка, а тот же неоднозначный выбор просто переезжает в параметр source_type.",
+      "D": "Списки источников не снимают смысловую неоднозначность: результаты конференций законно покрывают оба инструмента."
+    },
+    "takeaway_ru": "Описания уже хорошие, ошибки в узком неоднозначном классе → targeted few-shot, классификатор последним."
+  },
+  {
+    "id": "s2-05",
+    "domain": 2,
+    "task": "2.2",
+    "scenario": 1,
+    "sheet": "Empty Result vs Access Failure",
+    "type": "single",
+    "select": 1,
+    "stem": "When a lookup by email succeeds but matches no orders, lookup_order returns isError: true with the message \"No orders found.\" In those conversations the agent repeats the same lookup three times, then calls escalate_to_human with \"order system unavailable.\" A review of 500 such escalations found the backend was healthy in 96% of them; the customers had simply registered with a different email. How should lookup_order report this outcome?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep isError: true but set errorCategory: \"validation\" and isRetryable: false, so the agent stops repeating the same lookup."
+      },
+      {
+        "key": "B",
+        "text": "Keep the current response and cap the agent at one retry of lookup_order before it escalates the case to a human."
+      },
+      {
+        "key": "C",
+        "text": "Return isError: false with total_count: 0 and status: \"no_results\", so the agent asks the customer for another identifier."
+      },
+      {
+        "key": "D",
+        "text": "Keep isError: true with errorCategory: \"transient\" and a retry_after_seconds hint, so the retries are spaced out."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Запрос выполнился успешно и честно не нашёл заказов: это валидный пустой результат, а не сбой инструмента. С пометкой isError: true агент воспринимает его как отказ системы, повторяет запрос впустую и эскалирует несуществующий сбой. С isError: false и явным no_results агент понимает, что повтор бесполезен, и просит у клиента другой идентификатор.",
+    "why_wrong_ru": {
+      "A": "Категория validation означает некорректный вход, а адрес был корректным; успешный запрос не должен маскироваться под ошибку.",
+      "B": "Ограничение повторов лечит симптом: агент всё равно считает пустой ответ сбоем и эскалирует здоровую систему.",
+      "D": "Пометка transient прямо приглашает к повторам, хотя повторный запрос вернёт тот же пустой результат."
+    },
+    "takeaway_ru": "Пустой результат успешного запроса это ответ, а не ошибка: isError: false и без повторов."
+  },
+  {
+    "id": "s2-06",
+    "domain": 2,
+    "task": "2.2",
+    "scenario": 1,
+    "sheet": "isError — Complete Decision Table",
+    "type": "multi",
+    "select": 2,
+    "stem": "After a postmortem, your team standardizes how the support agent's MCP tools report outcomes. The old generic \"Operation failed\" text made the agent retry malformed inputs up to five times, yet give up on brief backend outages that a single delayed retry would have fixed. Which TWO response designs should the team adopt? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "lookup_order gets \"ORD-12\", which fails the ID format check: isError: true, errorCategory: \"transient\", isRetryable: true."
+      },
+      {
+        "key": "B",
+        "text": "get_customer finds three accounts matching the name: isError: false, status: \"multiple_matches\", the candidates, action_required."
+      },
+      {
+        "key": "C",
+        "text": "A lookup of 10 orders returns 7 and 3 time out: isError: true for the whole call, so the agent repeats all ten lookups."
+      },
+      {
+        "key": "D",
+        "text": "The tool's service credential lacks access to the customer's region: isError: true, errorCategory: \"permission\", isRetryable: true."
+      },
+      {
+        "key": "E",
+        "text": "The backend returns 503 in a brief outage: isError: true, errorCategory: \"transient\", isRetryable: true, retry_after_seconds."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Несколько совпадений это успешный ответ, которому нужна дисамбигуация: isError: false, список кандидатов и подсказка, что уточнить у клиента. Ответ 503 при кратком сбое это временная ошибка: isError: true, категория transient, повтор допустим, а retry_after_seconds говорит, когда повторять. Структурированные категории позволяют агенту не повторять то, что повтор не исправит, и повторять то, что исправит.",
+    "why_wrong_ru": {
+      "A": "Неверный формат ID это ошибка validation: повтор с тем же входом бесполезен, вход нужно исправить.",
+      "C": "Частичный результат возвращают со status: \"partial\", списками выполненного и упавшего с флагом retryable, а не выбрасывают семь успешных ответов.",
+      "D": "Отказ в доступе это permission с isRetryable: false: повтор с теми же правами снова получит отказ."
+    },
+    "takeaway_ru": "Повторяй только transient; validation и permission не повторяй; multiple_matches и partial идут с isError: false."
+  },
+  {
+    "id": "s2-07",
+    "domain": 2,
+    "task": "2.3",
+    "scenario": 4,
+    "sheet": "tool_choice",
+    "type": "single",
+    "select": 1,
+    "stem": "Your productivity agent must begin every legacy-exploration session by calling the MCP tool get_repo_profile, which returns build commands, module owners, and generated-code directories; without it, the agent wastes turns reading generated files. An engineer set tool_choice: \"any\" on the first API request. Logs from 1,200 sessions show that 11% still open with a Grep or Glob call instead. Which tool_choice configuration fixes this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep \"any\" on the first request and add few-shot examples that show get_repo_profile as the opening tool call."
+      },
+      {
+        "key": "B",
+        "text": "Set tool_choice to {\"type\": \"tool\", \"name\": \"get_repo_profile\"} on every request, so the profile is always current."
+      },
+      {
+        "key": "C",
+        "text": "Set tool_choice to \"auto\" and move the get_repo_profile requirement to the very top of the system prompt."
+      },
+      {
+        "key": "D",
+        "text": "Set tool_choice to {\"type\": \"tool\", \"name\": \"get_repo_profile\"} on the first request only, then \"auto\" afterward."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Значение \"any\" обязывает модель вызвать какой-нибудь инструмент, но выбор инструмента остаётся за моделью, поэтому иногда первым идёт Grep или Glob. Чтобы гарантировать конкретный первый вызов, нужен принудительный выбор {\"type\": \"tool\", \"name\": \"get_repo_profile\"} на первом запросе. Дальше tool_choice возвращают в \"auto\", и следующие шаги агент выбирает сам.",
+    "why_wrong_ru": {
+      "A": "Few-shot поверх \"any\" остаётся вероятностным и не гарантирует, что первым будет именно get_repo_profile.",
+      "B": "Принудительный get_repo_profile на каждом запросе не даёт агенту вызвать Read или Grep, и исследование кода не сдвинется с места.",
+      "C": "\"auto\" позволяет модели вообще не вызывать инструмент, а инструкция в промпте не гарантирует порядок вызовов."
+    },
+    "takeaway_ru": "\"any\" форсирует какой-то инструмент, а не нужный; конкретный первый вызов → {\"type\": \"tool\", \"name\": ...}."
+  },
+  {
+    "id": "s2-08",
+    "domain": 2,
+    "task": "2.4",
+    "scenario": 4,
+    "sheet": "MCP Primitives",
+    "type": "single",
+    "select": 1,
+    "stem": "No community server exists for your internal deployment platform, so the platform team builds a custom MCP server for the productivity agent. Requirements: the agent decides on its own when to trigger a rollback; a 300-entry service catalog (owners, repos, on-call rotations) is loaded by the client application as context; and a standard postmortem-drafting template starts only when an engineer explicitly picks it. How should these be exposed?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Rollback as a tool, the catalog as a resource, and the template as a prompt the application injects into every session."
+      },
+      {
+        "key": "B",
+        "text": "Rollback as a tool, the catalog as a resource, and the template as a prompt engineers invoke, e.g. as a slash command."
+      },
+      {
+        "key": "C",
+        "text": "All three as tools, so the model controls when each is used and the server exposes one consistent primitive type."
+      },
+      {
+        "key": "D",
+        "text": "Rollback and the catalog as resources the application reads, and the template as a tool the model calls when relevant."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "В MCP у каждого примитива свой владелец: tools контролирует модель, resources подключает приложение, prompts выбирает пользователь. Откат это действие, которое агент решает выполнить сам, поэтому это tool; каталог сервисов это данные, которые приложение кладёт в контекст, поэтому resource. Шаблон, который инженер запускает осознанно, это prompt, например в виде slash-команды.",
+    "why_wrong_ru": {
+      "A": "Prompts в MCP управляются пользователем, их не подставляют автоматически в каждую сессию.",
+      "C": "Каталог как tool заставляет агента делать разведывательные вызовы, а шаблон как tool отдаёт модели решение, которое принимает инженер.",
+      "D": "Resource это данные только для чтения, откат через него не выполнить, а шаблон должен выбирать пользователь, а не модель."
+    },
+    "takeaway_ru": "Tools выбирает модель, resources подключает приложение, prompts запускает пользователь."
+  },
+  {
+    "id": "s2-09",
+    "domain": 2,
+    "task": "2.4",
+    "scenario": 4,
+    "sheet": "MCP Primitives",
+    "type": "multi",
+    "select": 2,
+    "stem": "Your productivity agent connects to a custom MCP server for the analytics warehouse. Today it spends 8–12 list_tables and describe_table calls (about 3,000 tokens) per session just to learn what exists before writing any query. The team plans to expose some data as MCP resources instead of tools. Which TWO items are best exposed as resources? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "The warehouse schema: 140 tables with their columns and descriptions, revised about once a month."
+      },
+      {
+        "key": "B",
+        "text": "The live status of the ETL job queue, which changes every few seconds while the nightly load is running."
+      },
+      {
+        "key": "C",
+        "text": "Row-level query results filtered by the date range and region supplied with each question."
+      },
+      {
+        "key": "D",
+        "text": "A catalog of 60 curated dashboards with their owners and descriptions, updated quarterly."
+      },
+      {
+        "key": "E",
+        "text": "Cancellation of a stuck ETL job, identified by the job ID that the engineer provides."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Resource подходит для каталогов, которые меняются редко: агент один раз видит, что вообще существует, вместо серии разведывательных вызовов. Схема хранилища и каталог дашбордов как раз такие данные. Tool лучше там, где данные постоянно меняются, нужен параметризованный запрос или требуется изменение состояния.",
+    "why_wrong_ru": {
+      "B": "Статус очереди меняется каждые несколько секунд, такие данные реального времени получают вызовом tool в момент запроса.",
+      "C": "Выборка по дате и региону это параметризованный запрос, его выполняет tool.",
+      "E": "Отмена задачи меняет состояние системы, а мутации выполняются через tool."
+    },
+    "takeaway_ru": "Редко меняющийся каталог → resource; живые данные, параметры и изменения → tool."
+  },
+  {
+    "id": "s2-10",
+    "domain": 2,
+    "task": "2.5",
+    "scenario": 4,
+    "sheet": "Grep vs Glob",
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer asks your productivity agent to find every place that reads the deprecated LEGACY_PAYMENTS_URL environment variable in a 2,300-file service before it is removed. The agent ran Glob with the pattern **/*LEGACY_PAYMENTS_URL*, got zero matches, and replied that the variable is unused. A teammate later found it referenced in 14 files. What should the agent have done?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Run Grep for LEGACY_PAYMENTS_URL across the codebase, then Read only the matching files to see how each uses it."
+      },
+      {
+        "key": "B",
+        "text": "Run Glob again with a broader pattern such as **/*PAYMENTS* to catch files whose names only partly match the variable."
+      },
+      {
+        "key": "C",
+        "text": "Use Glob to list every source file, then Read each one in turn and check its contents for the variable name."
+      },
+      {
+        "key": "D",
+        "text": "Run find . -name \"*LEGACY_PAYMENTS_URL*\" through Bash, which searches the filesystem more thoroughly than Glob."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Glob ищет по путям и именам файлов, а имя переменной находится внутри файлов, поэтому ноль совпадений ничего не доказывает. Для поиска по содержимому нужен Grep, а затем Read только по найденным файлам. Так понимание кода строится постепенно, без чтения всего репозитория заранее.",
+    "why_wrong_ru": {
+      "B": "Более широкий шаблон Glob всё равно сравнивает только пути, а не содержимое файлов.",
+      "C": "Чтение 2300 файлов подряд расходует контекст и время, когда Grep сразу находит нужные места.",
+      "D": "find -name тоже ищет по именам файлов, это та же ошибка, что и с Glob."
+    },
+    "takeaway_ru": "Ищешь текст внутри файлов → Grep; ищешь файлы по имени или расширению → Glob."
+  }
+]

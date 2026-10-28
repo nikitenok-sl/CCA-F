@@ -1,0 +1,661 @@
+[
+ {
+  "id": "g-schema-01",
+  "domain": 4,
+  "task": "4.3",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "s4-04"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your freight-invoice extraction schema describes `invoice_number` as \"Invoice number\" and `po_number` as \"Order reference.\" Both are 8-digit numbers, and every result passes schema validation. Accounts payable reports that on 11% of invoices, mostly from carriers that print the seller's number under \"Document No.\" and the buyer's PO under \"Your ref.\", the two values are swapped or both fields hold the PO number. What is the most effective first fix?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Add the pattern `^[0-9]{8}$` to both fields so that only well-formed reference numbers pass validation."
+   },
+   {
+    "key": "B",
+    "text": "Reject outputs in which both fields hold the same number, then resend the unchanged request once."
+   },
+   {
+    "key": "C",
+    "text": "After extraction, swap the two values whenever `invoice_number` matches an open PO in the ERP."
+   },
+   {
+    "key": "D",
+    "text": "Describe each field as what it IS and IS NOT, e.g. \"seller's number (Document No.), NOT Your ref.\""
+   }
+  ],
+  "answer": [
+   "D"
+  ],
+  "explanation_ru": "Схема уже соблюдается, и формат у обоих номеров одинаковый, поэтому ошибка семантическая: модель не знает, какой номер в какое поле класть. Описание поля работает как инструкция, и для похожих полей оно должно задавать границу IS / IS NOT, включая метки, под которыми значение печатают в документе. Pattern, проверка дублей и перестановка по ERP ловят форму или часть случаев, но не объясняют модели, где чей номер.",
+  "why_wrong_ru": {
+   "A": "Оба номера восьмизначные, поэтому pattern пропустит и перепутанные значения.",
+   "B": "Проверка ловит только случай с одинаковыми номерами, перестановку она пропускает, а повтор того же запроса ничего модели не объясняет.",
+   "C": "Перестановка по ERP чинит только обмен местами, а когда в обоих полях стоит PO, номер продавца уже потерян."
+  },
+  "takeaway_ru": "Похожие поля различает описание: что поле IS, что IS NOT и под какими метками встречается.",
+  "signal_ru": "«Passes schema validation», оба номера восьмизначные, два симптома: формат и структура в порядке, путается смысл полей, а pattern, проверка дублей и перестановка по ERP закрывают максимум часть."
+ },
+ {
+  "id": "g-schema-02",
+  "domain": 4,
+  "task": "4.3",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "s4-07"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your patent-extraction tool defines `inventor` as a string described as \"Inventor named on the patent.\" About 40% of patents name two or more inventors. Audits show two problems: most multi-inventor patents return only the first name, and the rest return all names packed into one string such as \"Kim, J.; Patel, R.; Ortiz, M.\", which the downstream inventor-matching service rejects because it expects one person per value. Which change fixes both problems?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Replace it with an `inventors` array of strings, described as one entry per named inventor, in document order."
+   },
+   {
+    "key": "B",
+    "text": "Extend the description: \"If several inventors are listed, separate their names with semicolons.\""
+   },
+   {
+    "key": "C",
+    "text": "Add optional `inventor_2` through `inventor_6` string fields, so that every co-inventor gets a slot of their own."
+   },
+   {
+    "key": "D",
+    "text": "Extend the description: \"Return exactly one name, the first inventor listed,\" so every value parses."
+   }
+  ],
+  "answer": [
+   "A"
+  ],
+  "explanation_ru": "Поле, в котором в реальном документе бывает несколько значений, должно быть массивом. Массив `inventors` решает обе проблемы сразу: соавторы не теряются, и каждый элемент содержит одного человека, как ждёт сервис сопоставления. Описание с разделителем чинит только потерю имён, а «только первое имя» чинит только склейку, жертвуя данными.",
+  "why_wrong_ru": {
+   "B": "Имена больше не теряются, но остаются склеенными в одну строку, которую сервис отвергает.",
+   "C": "Пронумерованные слоты ставят потолок в шесть имён и провоцируют заполнять лишние слоты, массив без потолка надёжнее.",
+   "D": "Значение становится разбираемым, но соавторы теряются уже намеренно, то есть первая проблема остаётся."
+  },
+  "takeaway_ru": "Поле может иметь несколько значений в документе: делай его массивом, а не строкой или слотами.",
+  "signal_ru": "«Two or more inventors» и «expects one person per value»: нужны и все имена, и по одному на значение, обе потребности закрывает только массив."
+ },
+ {
+  "id": "g-schema-03",
+  "domain": 4,
+  "task": "4.3",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "s4-07"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your invoice schema stores lines as three parallel arrays: `line_descriptions` (strings), `line_quantities` (numbers), and `line_amounts` (numbers). On invoices with a flat-fee line that has no quantity, such as \"Setup fee\", every later line receives the quantity of the line below it. On about half of these invoices the three arrays still have equal length, because the model repeats the last quantity to fill the gap. Which change fixes the misalignment?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Reject outputs whose three arrays differ in length, and retry them with that specific validation error."
+   },
+   {
+    "key": "B",
+    "text": "Add a required `line_count` integer and require each of the three arrays to hold exactly that many entries."
+   },
+   {
+    "key": "C",
+    "text": "Use one `line_items` array of objects, each holding a description, a nullable quantity, and an amount."
+   },
+   {
+    "key": "D",
+    "text": "Add \"keep all three arrays in the same line order\" to each array's description, so index i is one line."
+   }
+  ],
+  "answer": [
+   "C"
+  ],
+  "explanation_ru": "Параллельные массивы связывают значения одной строки только позицией, и в массиве чисел негде выразить «у этой строки нет количества», поэтому одна пропущенная ячейка сдвигает все последующие. Массив объектов держит поля одной строки вместе, а nullable quantity даёт честное место для отсутствующего значения. Проверки длины и счётчики ловят только часть случаев: при равной длине сдвиг их проходит.",
+  "why_wrong_ru": {
+   "A": "Половина сдвинутых результатов имеет равную длину и проходит эту проверку.",
+   "B": "Счётчик сверяет только число элементов, сдвиг при равной длине он не видит, а требование ровной длины подталкивает дописывать значения.",
+   "D": "Порядок строк и так сохраняется, проблема в том, что для строки без количества в массиве чисел нет места."
+  },
+  "takeaway_ru": "Поля одной строки документа держи в одном объекте массива, а не в параллельных массивах.",
+  "signal_ru": "«Every later line receives the quantity of the line below» и «still have equal length»: связь по позиции ломается, а проверки длины половину случаев не видят."
+ },
+ {
+  "id": "g-schema-04",
+  "domain": 4,
+  "task": "4.3",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "d4-06"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your warranty-claim extractor defines `product_model` as an enum of the 85 models in the current catalog, so that downstream warranty lookups always receive a valid key. An audit of 500 claims finds that claims for discontinued models are silently mapped to the nearest current one (\"X200\" becomes \"X210\"), and claims for third-party accessories also receive a catalog model. The warranty service can look up every model ever sold and returns \"not found\" for anything else. Which schema change best fixes this?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Add \"other\" to the enum with a `product_model_detail` string for models that are not in the catalog."
+   },
+   {
+    "key": "B",
+    "text": "Make `product_model` a nullable string copied as printed, and let the warranty service resolve it."
+   },
+   {
+    "key": "C",
+    "text": "Add every model discontinued in the last ten years to the enum, so that older claims have an exact match."
+   },
+   {
+    "key": "D",
+    "text": "Add a `product_model_confidence` score and send claims scored below 0.7 to a reviewer for correction."
+   }
+  ],
+  "answer": [
+   "B"
+  ],
+  "explanation_ru": "Модель изделия это значение, извлекаемое из документа, а не категория, которую вы определяете, поэтому enum здесь вреден: модель подгоняет напечатанное под ближайший разрешённый вариант. Nullable-строка «как напечатано» сохраняет реальное значение, а сопоставление делает сервис гарантий, который знает все модели и честно отвечает «not found». Enum с «other» + detail подходит для своих категорий, но при близком совпадении вроде X200 и X210 модель всё равно выберет существующее значение.",
+  "why_wrong_ru": {
+   "A": "Похожая модель из каталога выглядит подходящей, поэтому модель продолжит выбирать её, а не «other»: приём для своих категорий не подходит для извлекаемых значений.",
+   "C": "Аксессуары сторонних производителей и новые модели всё равно будут подгоняться под ближайшее значение, а enum придётся расширять без конца.",
+   "D": "Самооценка уверенности плохо откалибрована, и модель уверенно выбирает ближайшее значение, считая его правильным."
+  },
+  "takeaway_ru": "Enum только для своих категорий; значения из документа извлекай строкой, как напечатано.",
+  "signal_ru": "«Mapped to the nearest current one» и сервис, который сам ищет любую модель: значение извлекается из документа и сверяется в коде, enum лишь подгоняет его под ближайшее."
+ },
+ {
+  "id": "g-schema-05",
+  "domain": 4,
+  "task": "4.3",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "d4-06"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your customs-declaration extractor defines `declared_value` as `{\"type\": \"number\"}`, lists it in `required`, and describes it as \"Declared value of the shipment.\" On 14% of forms the Declared Value box is blank, yet all of them return a number, usually the Insured Value printed lower on the form or the sum of the line values. Last month, making a similar field nullable without changing its description cut invented values only from 90% to 35%. Which change fixes this?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Keep the field required and add to its description: \"If the box is blank, do not estimate the value.\""
+   },
+   {
+    "key": "B",
+    "text": "Make the field nullable and optional, keeping the current description, so that the model may return null."
+   },
+   {
+    "key": "C",
+    "text": "Reject any value equal to the Insured Value and retry with that specific validation error in the prompt."
+   },
+   {
+    "key": "D",
+    "text": "Make it nullable and optional, and describe it: \"null if the box is blank; do not copy or compute it.\""
+   }
+  ],
+  "answer": [
+   "D"
+  ],
+  "explanation_ru": "Нужны обе части: nullable-тип вне required даёт модели законный способ вернуть пустое значение, а описание «null, если поле пустое, не копируй и не вычисляй» говорит, когда этим способом пользоваться. Одно описание при required number невыполнимо, схема всё равно требует число. Один nullable без описания, как показал прошлый месяц, оставляет около трети выдуманных значений.",
+  "why_wrong_ru": {
+   "A": "Поле остаётся обязательным числом, поэтому инструкцию «не оценивай» выполнить невозможно, и модель продолжит подставлять число.",
+   "B": "Это половина правки: прошлый опыт показывает, что без описания модель всё ещё берёт соседние суммы примерно в трети случаев.",
+   "C": "Проверка ловит только копии Insured Value, а не суммы строк, и повтор не может извлечь значение, которого в документе нет."
+  },
+  "takeaway_ru": "Отсутствующие данные: nullable-тип плюс описание «верни null, не оценивай», одно без другого не работает.",
+  "signal_ru": "Поле required number, значит null сейчас невозможен; «nullable without changing its description» дало 35%, значит нужны и тип, и описание вместе."
+ },
+ {
+  "id": "g-schema-06",
+  "domain": 4,
+  "task": "4.3",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "s4-08"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your spec-sheet extractor uses tool use with a strict schema in which `weight_kg` is a required number that the shipping-cost service consumes. Sheets from 40 manufacturers print weight as \"1.2 kg\", \"1200 g\", or \"2 lb 4 oz\". Every result validates, but QA finds two problems: gram values copied as kilograms (1200 instead of 1.2), and pound-ounce values turned into decimals (2.4 instead of about 1.02). Which change fixes both problems?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Add normalization rules to the prompt: convert g, lb, and oz to kg using the stated conversion factors."
+   },
+   {
+    "key": "B",
+    "text": "Add `\"maximum\": 100` to weight_kg so that gram values copied as kilograms fail validation and retry."
+   },
+   {
+    "key": "C",
+    "text": "Change weight_kg to a string so that each value keeps its unit exactly as the manufacturer printed it."
+   },
+   {
+    "key": "D",
+    "text": "Keep the setup, since strict mode already guarantees that weight_kg holds a valid number on every sheet."
+   }
+  ],
+  "answer": [
+   "A"
+  ],
+  "explanation_ru": "Строгая схема гарантирует, что в weight_kg будет число, но не то, что это правильное число в килограммах. Для неоднородного форматирования источника гайд (4.3) предлагает правила нормализации в промпте рядом со строгой схемой: явные коэффициенты для g, lb и oz чинят обе ошибки. Ограничение maximum ловит только граммы, а 2.4 выглядит правдоподобным весом и проходит.",
+  "why_wrong_ru": {
+   "B": "Ловит только граммы, а неверно пересчитанные фунты вроде 2.4 укладываются в лимит и проходят.",
+   "C": "Единицы сохраняются, но сервис расчёта доставки ждёт число в килограммах, и пересчёт просто переезжает в downstream код.",
+   "D": "Strict mode гарантирует тип и наличие поля, но не правильность значения и единицы."
+  },
+  "takeaway_ru": "Строгая схема задаёт тип, а единицы и формат приводи правилами нормализации в промпте.",
+  "signal_ru": "«Every result validates» при разных единицах в источнике: тип уже соблюдён, ошибка в пересчёте; maximum ловит только граммы, а 2.4 его проходит."
+ },
+ {
+  "id": "g-schema-07",
+  "domain": 4,
+  "task": "4.4",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "s4-08"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your lease-extraction pipeline parses JSON from the model's text reply and then runs five Python checks. You are moving to tool use with a strict schema in which `tenant_name`, `landlord_name`, `monthly_rent`, `lease_start`, and `lease_end` are required and typed, with `monthly_rent` a number. A teammate wants to delete every check that the migration makes redundant. Which TWO checks will still catch real problems after the migration? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "`json.loads()` inside try/except, with a fallback that strips Markdown code fences before parsing."
+   },
+   {
+    "key": "B",
+    "text": "An assertion that `lease_end` is later than `lease_start`, flagging leases whose two dates look swapped."
+   },
+   {
+    "key": "C",
+    "text": "An assertion that all five keys are present in the parsed object before it is written to the database."
+   },
+   {
+    "key": "D",
+    "text": "An assertion that `monthly_rent` is numeric rather than a string such as \"$2,400.00\" with a currency sign."
+   },
+   {
+    "key": "E",
+    "text": "An assertion that `tenant_name` differs from `landlord_name`, flagging one party copied into both fields."
+   }
+  ],
+  "answer": [
+   "B",
+   "E"
+  ],
+  "explanation_ru": "Каждую проверку оцениваем отдельно: убирает ли её проблему сама строгая схема. Tool use со строгой схемой устраняет синтаксические ошибки JSON, отсутствие required полей и несовпадение типов, поэтому A, C и D становятся избыточными. Перепутанные даты (B) и одна сторона, скопированная в оба поля (E), это семантические ошибки: значения правильного типа в неправильных полях, схема их не ловит, и эти проверки нужно оставить.",
+  "why_wrong_ru": {
+   "A": "При tool use данные приходят как input вызова инструмента, обёрток в code fences и ошибок парсинга нет.",
+   "C": "Строгая схема гарантирует наличие всех required полей.",
+   "D": "Строгая схема гарантирует тип number, строка с символом валюты её не пройдёт."
+  },
+  "takeaway_ru": "После перехода на tool_use оставляй семантические проверки: схема ловит синтаксис и типы, не смысл.",
+  "signal_ru": "«Required and typed» закрывает парсинг, ключи и типы; даты не по порядку и одна сторона в двух полях имеют валидный тип, это проверки смысла."
+ },
+ {
+  "id": "g-schema-08",
+  "domain": 4,
+  "task": "4.3",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "s4-07",
+   "d4-06"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "A teammate's draft schema for extracting supplier agreements is up for your review. Agreements come from hundreds of suppliers; some are signed by one person and others by up to nine, many omit optional clauses, and the delivery terms vary widely between suppliers. Which TWO field definitions should you send back because they will cause fabricated or lost data? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "`signatory_1` through `signatory_4`: four required strings, one per signing person, in signing order."
+   },
+   {
+    "key": "B",
+    "text": "`agreement_type`: an enum of your five agreement types plus \"other\" with an `agreement_type_detail` string."
+   },
+   {
+    "key": "C",
+    "text": "`penalty_rate`: type [\"number\", \"null\"], not required, described \"null if no penalty clause; do not estimate\"."
+   },
+   {
+    "key": "D",
+    "text": "`delivery_terms`: an enum of EXW, FOB, and DDP, the three terms your logistics team handles most often."
+   },
+   {
+    "key": "E",
+    "text": "`price_tiers`: an array of objects, each with min_quantity, a nullable max_quantity, and unit_price."
+   }
+  ],
+  "answer": [
+   "A",
+   "D"
+  ],
+  "explanation_ru": "Каждое поле оцениваем отдельно. A: пронумерованные required слоты заставляют выдумывать подписантов у соглашений с одной подписью и теряют всех после четвёртого, повторяющиеся элементы моделируют массивом объектов. D: закрытый enum без \"other\" втиснет CIF, DAP и другие условия в один из трёх вариантов, и реальные условия поставки потеряются. B, C и E это правильные приёмы: enum с \"other\" + detail, nullable с «не оценивай», массив объектов.",
+  "why_wrong_ru": {
+   "B": "Тип соглашения это ваша категория, и enum с «other» + detail как раз правильный шаблон для расширяемых категорий.",
+   "C": "Nullable-поле вне required с описанием «null, не оценивай» это правильная защита от выдуманных значений.",
+   "E": "Массив объектов без потолка верно моделирует повторяющиеся ценовые уровни, а nullable max_quantity даёт место для открытого верхнего уровня."
+  },
+  "takeaway_ru": "На ревью схемы ищи пронумерованные слоты и enum без \"other\": они порождают выдумки и потери.",
+  "signal_ru": "«Up to nine» ломает четыре слота, «delivery terms vary widely» ломает закрытый enum из трёх значений; у B те же enum, но с \"other\" + detail."
+ },
+ {
+  "id": "g-schema-09",
+  "domain": 4,
+  "task": "4.4",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "s4-08"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your expense app extracts restaurant receipts by asking for JSON in the system prompt with `subtotal`, `tax`, `tip`, and `total`. A week of logs shows two problems. 3% of replies fail to parse because a sentence of explanation follows the JSON. 2% parse cleanly but, on card slips where the handwritten tip sits above the printed subtotal, put the tip amount into `subtotal` and leave `tip` null. Which change fixes both problems?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Move to tool use with a strict schema, which guarantees valid, typed JSON and so correctly placed values."
+   },
+   {
+    "key": "B",
+    "text": "Keep JSON in text, and add a code check that subtotal + tax + tip equals total, retrying with the error."
+   },
+   {
+    "key": "C",
+    "text": "Move to tool use with a strict schema, and check in code that subtotal + tax + tip equals total."
+   },
+   {
+    "key": "D",
+    "text": "Move to tool use and force the extraction tool by name, so the model must fill each field from its schema."
+   }
+  ],
+  "answer": [
+   "C"
+  ],
+  "explanation_ru": "Здесь две ошибки разной природы. Текст после JSON это синтаксическая проблема, её устраняет tool use со строгой схемой. Чаевые в subtotal это семантическая ошибка: значение правильного типа в неправильном поле, схема её пропускает, поэтому нужна проверка в коде (subtotal + tax + tip = total), после которой можно сделать повтор с конкретной ошибкой. Каждый частичный вариант чинит только одну из двух проблем.",
+  "why_wrong_ru": {
+   "A": "Tool use убирает ошибки парсинга, но не гарантирует, что значения попадут в правильные поля.",
+   "B": "Проверка суммы ловит чаевые в subtotal, но JSON в тексте остаётся источником ошибок парсинга.",
+   "D": "Forced tool_choice гарантирует вызов инструмента, но не правильное распределение значений по полям."
+  },
+  "takeaway_ru": "Синтаксис чинит tool use, неправильные поля ловит семантическая проверка; обычно нужны оба.",
+  "signal_ru": "«Fail to parse» это синтаксис, «parse cleanly but put the tip into subtotal» это смысл; каждая частичная правка закрывает только одну из двух ошибок."
+ },
+ {
+  "id": "g-schema-10",
+  "domain": 4,
+  "task": "4.3",
+  "scenario": 6,
+  "focus": "Схема как инструкция",
+  "targets": [
+   "s4-04",
+   "s4-07"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your property-sale extractor has `buyer_name` described as \"Buyer\" and `seller_name` described as \"Seller\", both strings. Audits of 600 agreements show two problems. Agreements drafted in the UK, which call the seller the \"Vendor\" and the buyer the \"Purchaser\", often come back with the parties reversed. And when a couple or two companies buy jointly, only one buyer is returned. Which TWO changes fix these problems? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "Add optional `buyer_2_name` and `buyer_3_name` fields so that joint purchasers each get a slot of their own."
+   },
+   {
+    "key": "B",
+    "text": "Force the extraction tool with tool_choice so the model applies the schema's field names more consistently."
+   },
+   {
+    "key": "C",
+    "text": "Describe seller as the party transferring title (may say Vendor), NOT the Purchaser; mirror for buyer."
+   },
+   {
+    "key": "D",
+    "text": "Post-process with a rule that swaps the two names whenever the agreement text contains the word Vendor."
+   },
+   {
+    "key": "E",
+    "text": "Turn both party fields into `buyers` and `sellers` arrays, one entry per party named in the agreement."
+   }
+  ],
+  "answer": [
+   "C",
+   "E"
+  ],
+  "explanation_ru": "Каждый вариант оцениваем отдельно. C: описание поля это инструкция, и граница IS / IS NOT с местной меткой Vendor объясняет модели, какая сторона продавец. E: поле, где в документе бывает несколько значений, должно быть массивом, тогда совместные покупатели не теряются. Слоты ставят потолок, forced tool_choice не трогает смысл полей, а правило-перестановка ломает правильные результаты.",
+  "why_wrong_ru": {
+   "A": "Пронумерованные слоты ставят потолок в три покупателя и не решают путаницу сторон.",
+   "B": "Инструмент и так вызывается, forced tool_choice не объясняет модели, что Vendor означает продавца.",
+   "D": "Правило переставит и те соглашения, что извлечены правильно, ведь ошибка частая, но не постоянная, а совместные покупатели всё равно теряются."
+  },
+  "takeaway_ru": "Путаницу похожих полей лечит IS / IS NOT, потерю нескольких значений лечит массив.",
+  "signal_ru": "«Vendor… Purchaser… reversed» указывает на описания полей, «only one buyer is returned» на массив; слоты и tool_choice не закрывают ни одну проблему полностью."
+ },
+ {
+  "id": "g-criteria-01",
+  "domain": 4,
+  "task": "4.1",
+  "scenario": 5,
+  "focus": "Критерии: применить к конкретному случаю",
+  "targets": [
+   "s4-01"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your CI reviewer's new docstring criteria say: flag a docstring only if it contradicts what the function does, names a parameter, function, or module that no longer exists, or is a TODO/FIXME describing a bug the code has already fixed. Do not flag docstrings that are merely incomplete or written in an outdated style. Which TWO docstrings in this pull request should produce a finding? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "\"Returns the user's orders.\" on a function that also sorts them by date and paginates, which it never mentions."
+   },
+   {
+    "key": "B",
+    "text": "\"Raises ValueError if amount is negative.\" on a function this PR changed to clamp negative amounts to zero."
+   },
+   {
+    "key": "C",
+    "text": "\"@param user_id: the user id\" in the Javadoc style the team replaced with Google style, still accurate."
+   },
+   {
+    "key": "D",
+    "text": "\"retries (int): attempts before giving up\" on a function whose `retries` parameter this PR removed."
+   },
+   {
+    "key": "E",
+    "text": "\"TODO: support multi-currency\" on a function that still handles only USD amounts, as it always has."
+   }
+  ],
+  "answer": [
+   "B",
+   "D"
+  ],
+  "explanation_ru": "Каждый докстринг проверяем по критерию отдельно. B противоречит коду: функция больше не бросает ValueError, а обрезает значение до нуля. D называет параметр, которого больше нет. A неполный, но верный, C написан в устаревшем стиле, но верен, E описывает ещё не сделанную работу, а не уже исправленный баг, поэтому все три попадают в skip.",
+  "why_wrong_ru": {
+   "A": "Докстринг не упоминает сортировку и пагинацию, но и не противоречит им: неполный не значит неточный.",
+   "C": "Устаревший стиль оформления при верном содержании прямо входит в список skip.",
+   "E": "TODO описывает работу, которой ещё нет, а не баг, который уже исправлен, поэтому он остаётся верным."
+  },
+  "takeaway_ru": "Флагуй противоречие коду или несуществующее имя; неполноту и старый стиль пропускай.",
+  "signal_ru": "«Changed to clamp» и «parameter this PR removed» прямо попадают в пункты flag; «never mentions», «replaced with Google style» и «still handles only USD» это skip."
+ },
+ {
+  "id": "g-criteria-02",
+  "domain": 4,
+  "task": "4.1",
+  "scenario": 5,
+  "focus": "Критерии: применить к конкретному случаю",
+  "targets": [
+   "s4-01"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your reviewer's criteria for deprecation notices: flag a notice only if it contradicts the code or names a replacement or symbol that no longer exists. Do not flag notices that are incomplete or follow an older wording convention. This pull request renames the function `fetchOrdersV2()` to `listOrders()`, updates every call site, and touches four deprecated functions. Which of their notices should produce a finding?",
+  "options": [
+   {
+    "key": "A",
+    "text": "`@deprecated Use fetchOrdersV2() instead.` above a legacy function that old mobile clients still call."
+   },
+   {
+    "key": "B",
+    "text": "`@deprecated Will be removed in a future release.` with no version number and no suggested replacement."
+   },
+   {
+    "key": "C",
+    "text": "`@deprecated since 3.2, use listOrders()` while the team now writes \"Deprecated since v3.2\" in notices."
+   },
+   {
+    "key": "D",
+    "text": "`// TODO: remove this shim once all clients migrate` above a shim that two clients still call today."
+   }
+  ],
+  "answer": [
+   "A"
+  ],
+  "explanation_ru": "После переименования в этом PR функции fetchOrdersV2() больше нет, и уведомление A отправляет пользователей к несуществующей замене, это прямо пункт flag. B неполное, C оформлено по старой конвенции, D описывает ещё не завершённую миграцию и остаётся верным. Ни одно из них не противоречит коду, поэтому все три пропускаются.",
+  "why_wrong_ru": {
+   "B": "Нет версии и замены, но уведомление не ложно: неполное не значит неточное.",
+   "C": "Смысл верен, отличается только формат записи, а старая конвенция входит в skip.",
+   "D": "Shim действительно ещё нужен двум клиентам, TODO описывает предстоящую работу и остаётся правдой."
+  },
+  "takeaway_ru": "Ссылка на имя, которого больше нет, это находка; неполное или старое оформление не находка.",
+  "signal_ru": "После переименования fetchOrdersV2() больше не существует, поэтому ссылка в A ведёт на несуществующий символ; у остальных только неполнота, стиль или открытая работа."
+ },
+ {
+  "id": "g-criteria-03",
+  "domain": 4,
+  "task": "4.1",
+  "scenario": 5,
+  "focus": "Критерии: применить к конкретному случаю",
+  "targets": [
+   "s4-01"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your CI reviewer applies one rule to test names and test comments: flag an item only if it contradicts what the test actually checks, or is a TODO/FIXME describing a problem the code already fixes. Incomplete, vague, or old-convention names are skipped. This pull request changes token validation and the suite's clock handling. Which TWO items should be flagged? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "`test_rejects_expired_token`, which now asserts that a token expired 2 minutes ago is accepted."
+   },
+   {
+    "key": "B",
+    "text": "`test_login`, which covers only the happy path and has no test cases for lockout or wrong passwords."
+   },
+   {
+    "key": "C",
+    "text": "`# FIXME: flaky, depends on the real clock` above a test that this PR moved to a frozen fake clock."
+   },
+   {
+    "key": "D",
+    "text": "`testCheckoutFlow`, in camelCase, although the team's current convention for test names is snake_case."
+   },
+   {
+    "key": "E",
+    "text": "`# TODO: add a test for leap-year renewals` in a file that does not contain any such test yet."
+   }
+  ],
+  "answer": [
+   "A",
+   "C"
+  ],
+  "explanation_ru": "Каждый пункт оцениваем отдельно. A: имя утверждает, что истёкший токен отклоняется, а тест теперь проверяет, что он принимается, это противоречие. C: FIXME описывает нестабильность из-за реальных часов, которую этот PR уже устранил. B расплывчат, D в старой конвенции, E описывает ещё не написанный тест, все три попадают в skip.",
+  "why_wrong_ru": {
+   "B": "Имя неполное, но не ложное: тест действительно проверяет логин.",
+   "D": "Нарушение конвенции именования это стиль, а не неточность.",
+   "E": "TODO описывает работу, которой ещё нет, и остаётся правдой."
+  },
+  "takeaway_ru": "Имя теста флагуй, только если оно утверждает то, что тест больше не проверяет.",
+  "signal_ru": "«Changed to assert… is accepted» и «moved to a frozen fake clock» дают противоречие и исправленный FIXME; «only the happy path», camelCase и «not yet» это skip."
+ },
+ {
+  "id": "g-criteria-04",
+  "domain": 4,
+  "task": "4.1",
+  "scenario": 5,
+  "focus": "Критерии: применить к конкретному случаю",
+  "targets": [
+   "s4-01",
+   "d4-01"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your team extends the reviewer's comment criteria to log and error messages: flag a message only if what it states contradicts the code path that emits it, or it names a setting or symbol that no longer exists. Vague, terse, or old-terminology messages are skipped. In this pull request, `MAX_RETRIES` was raised from 3 to 5. Which message should produce a finding?",
+  "options": [
+   {
+    "key": "A",
+    "text": "`raise ValueError(\"invalid input\")` in a parser that checks five separate rules before it raises."
+   },
+   {
+    "key": "B",
+    "text": "`log.info(\"Connecting to Mongo...\")` where the team now says \"document store\" but the driver is still MongoDB."
+   },
+   {
+    "key": "C",
+    "text": "`log.error(\"Payment failed\")` in a handler that has the order ID at hand but does not include it."
+   },
+   {
+    "key": "D",
+    "text": "`log.warning(f\"Retrying (attempt {n} of 3)\")` inside the retry loop that is bounded by `MAX_RETRIES`."
+   }
+  ],
+  "answer": [
+   "D"
+  ],
+  "explanation_ru": "Сообщение в D утверждает, что попыток три, а цикл после этого PR ограничен MAX_RETRIES = 5, то есть текст противоречит коду, который его выводит. A расплывчато, но правдиво: ввод действительно неверен. B использует старый термин, но описывает реальное подключение к MongoDB, C неполное, но верное, поэтому все три попадают в skip.",
+  "why_wrong_ru": {
+   "A": "Сообщение неконкретное, но не ложное, а расплывчатость прямо входит в skip.",
+   "B": "Терминология устарела, но факт верен: драйвер по-прежнему подключается к MongoDB.",
+   "C": "Не хватает order ID, но сообщение правдиво: неполное не значит неточное."
+  },
+  "takeaway_ru": "Флагуй сообщение, если его утверждение расходится с кодом, а не если оно скупое.",
+  "signal_ru": "«MAX_RETRIES was raised from 3 to 5» делает «of 3» в D противоречием коду; остальные сообщения только расплывчаты, неполны или в старой терминологии."
+ },
+ {
+  "id": "g-criteria-05",
+  "domain": 4,
+  "task": "4.1",
+  "scenario": 5,
+  "focus": "Критерии: применить к конкретному случаю",
+  "targets": [
+   "s4-01",
+   "d4-01"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your CI reviewer's comment criterion reads: \"flag a comment only if it contradicts the code.\" Over two weeks it raised 60 findings on TODO and FIXME comments. Developers dismissed 51, nearly all TODOs such as `// TODO: add pagination` above code that has no pagination yet, reported as \"comment does not match the code.\" They accepted the other 9, all FIXMEs describing bugs the same code already fixes. What is the most effective change?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Permanently drop TODO and FIXME comments from the review scope, since 85% of their findings are dismissed."
+   },
+   {
+    "key": "B",
+    "text": "Add a skip rule for TODOs about work not yet done, with an example pair contrasting one with a fixed FIXME."
+   },
+   {
+    "key": "C",
+    "text": "Ask the model for a confidence score on each TODO or FIXME finding and post only those scored above 0.9."
+   },
+   {
+    "key": "D",
+    "text": "Append \"Be conservative with TODO and FIXME comments; report one only when you are sure it matters.\""
+   }
+  ],
+  "answer": [
+   "B"
+  ],
+  "explanation_ru": "Отклонённые TODO описывают работу, которой ещё нет: это неполная реализация, а не неточный комментарий, и критерий должен явно отнести их к skip. Принятые 9 FIXME описывают уже исправленные баги, это настоящие находки, поэтому выключать весь класс нельзя. Явное skip-правило плюс пара примеров (TODO на будущую работу против FIXME на исправленный баг) задаёт границу, которую одна строка критерия не задала.",
+  "why_wrong_ru": {
+   "A": "Это не временное отключение на время доработки, а постоянный отказ, и вместе с шумом пропадут 9 настоящих находок о FIXME на исправленные баги.",
+   "C": "Модель уверенно считает такие TODO несоответствием коду, порог уверенности не определяет, что считать проблемой.",
+   "D": "Расплывчатая просьба быть осторожнее не говорит, какие TODO пропускать, и не повышает precision."
+  },
+  "takeaway_ru": "TODO на несделанную работу это skip, FIXME на исправленный баг это flag; пиши это явно.",
+  "signal_ru": "51 отклонённая находка это TODO на ещё не сделанную работу, 9 принятых это FIXME на исправленные баги: нужен skip для первых без потери вторых."
+ }
+]

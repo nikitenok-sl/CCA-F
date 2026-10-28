@@ -1,0 +1,527 @@
+[
+  {
+    "id": "f-context-01",
+    "domain": 3,
+    "task": "3.2",
+    "scenario": 2,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d3-03"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Developers on your team run the project skill /dep-audit in the middle of feature work. It reads the lockfiles and manifests of 30 internal packages, about 35,000 tokens of tool output, and ends with a 15-line table of packages that need upgrades. After a run, Claude's next edits in the same session drift from interface decisions agreed earlier. Nobody ever looks at the raw dependency trees again; only the final table is used. Which change to the skill best addresses this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Have the skill write the dependency trees to a scratchpad file under notes/ instead of printing them into the conversation."
+      },
+      {
+        "key": "B",
+        "text": "Ask developers to run /compact right after every /dep-audit run so the dependency output is condensed before they continue."
+      },
+      {
+        "key": "C",
+        "text": "Add context: fork to the SKILL.md frontmatter so the audit runs in an isolated sub-agent and only the table comes back."
+      },
+      {
+        "key": "D",
+        "text": "Add allowed-tools: Read, Glob to the frontmatter so the audit can only read files and cannot run commands in the session."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "context: fork во frontmatter SKILL.md запускает навык в изолированном контексте сабагента, поэтому 35 000 токенов вывода инструментов остаются там, а в основную сессию возвращается только таблица. Гайд прямо рекомендует так изолировать навыки с объёмным выводом. Scratchpad здесь не помогает: навык работает в основном контексте, и результаты Read всё равно попадают в диалог, даже если итог записан в файл.",
+    "why_wrong_ru": {
+      "A": "Файл меняет только место финального текста, а чтение 30 lockfile-ов по-прежнему идёт через основной контекст и засоряет его.",
+      "B": "/compact лечит уже засорённый контекст постфактум, требует ручной дисциплины и при сжатии может размыть ранее согласованные решения.",
+      "D": "allowed-tools ограничивает набор инструментов, но не изолирует их вывод, поэтому объём в основном контексте не меняется."
+    },
+    "takeaway_ru": "Вывод навыка нужен один раз и только итог → context: fork, а не файл и не /compact.",
+    "signal_ru": "\"Сырые деревья больше не нужны, используется только таблица\" и \"35 000 токенов\" → изолировать навык через context: fork; scratchpad не убирает вывод Read из основного контекста."
+  },
+  {
+    "id": "f-context-02",
+    "domain": 3,
+    "task": "3.4",
+    "scenario": 2,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d3-07"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer is halfway through implementing an approved plan in Claude Code: three files are already edited, and the plan's details exist only in the conversation. She now needs every place the feature flag billing_v2 is read across a 1,400-file repository. The flag is referenced in several forms, so the search means about 300 Grep hits and dozens of files to open, while only the final list of call sites matters for her next edits. How should she get that list?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Delegate the search to the Explore subagent so the verbose output stays isolated and only the list returns."
+      },
+      {
+        "key": "B",
+        "text": "Run the search in the main conversation, then run /compact to condense the results before resuming the edits."
+      },
+      {
+        "key": "C",
+        "text": "Run the search in a separate new session and paste that session's full transcript into the main conversation."
+      },
+      {
+        "key": "D",
+        "text": "Run the search in the main conversation, but have Claude append every match to a scratchpad file as it goes."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Explore subagent создан для изоляции многословной фазы поиска: Grep и Read выполняются в его контексте, а в основной диалог возвращается только сводка. Это защищает план и уже сделанные правки, которые живут только в основной беседе. /compact и scratchpad в основном контексте не мешают выводу поиска туда попасть: первый сжимает уже после засорения и может размыть детали плана, второй дублирует результат, не убирая сырой вывод.",
+    "why_wrong_ru": {
+      "B": "/compact сжимает уже засорённый контекст и вместе с выводом поиска может размыть детали плана, которые есть только в беседе.",
+      "C": "Вставка полного транскрипта переносит в основную беседу тот же многословный вывод, от которого нужно было уйти.",
+      "D": "Grep и Read всё равно выполняются в основном контексте, файл лишь дублирует найденное."
+    },
+    "takeaway_ru": "Побочный объёмный поиск посреди работы → Explore subagent; в основной контекст только итоговый список.",
+    "signal_ru": "\"План существует только в беседе\" и \"нужен лишь итоговый список\" при ~300 совпадениях → Explore subagent, а не поиск в основном контексте с /compact или scratchpad."
+  },
+  {
+    "id": "f-context-03",
+    "domain": 5,
+    "task": "5.4",
+    "scenario": 4,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d5-07"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your exploration agent already delegates every codebase search to subagents, each returning a summary of about 400 tokens, so after a four-hour onboarding session on a logistics platform the main context is only about 50% full. Still, at question 31 the agent says RetryPolicy belongs to the dispatch service, contradicting its correct conclusion at question 6 that carrier-gateway owns it. The engineer will keep asking questions in this session for several more hours. What is the most effective change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Spawn a fresh subagent to answer every new question so that each answer is produced from a clean, isolated context."
+      },
+      {
+        "key": "B",
+        "text": "Run /compact after every ten questions so the main context stays small and earlier conclusions survive in the summary."
+      },
+      {
+        "key": "C",
+        "text": "Cut each subagent summary to about 150 tokens so earlier answers take up less space and stay closer to the focus."
+      },
+      {
+        "key": "D",
+        "text": "Have the agent log confirmed findings, such as owners and file paths, in a scratchpad file it checks first."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Делегирование уже изолирует вывод поиска, и контекст заполнен лишь наполовину, значит проблема не в объёме, а в том, что выводы, сделанные 25 вопросов назад, размываются в длинной сессии. Scratchpad-файл с подтверждёнными находками переносит их за пределы контекста, и агент сверяется с ним перед следующими ответами. Новые сабагенты не помогают: они не помнят прежних выводов и поэтому не дают согласованности.",
+    "why_wrong_ru": {
+      "A": "Свежий сабагент не знает выводов прошлых вопросов, поэтому согласованность ответов только ухудшится, а исследование будет повторяться.",
+      "B": "/compact ещё сильнее сжимает ранние выводы, а контекст и так заполнен лишь на 50%, так что объём не является причиной.",
+      "C": "Сводки уже короткие, и проблема не в их размере, а в том, что подтверждённые выводы нигде не закреплены."
+    },
+    "takeaway_ru": "Делегирование изолирует вывод, но не хранит выводы; для согласованности между вопросами нужен scratchpad.",
+    "signal_ru": "\"Уже делегирует сабагентам\", \"контекст на 50%\" и противоречие ответу 6 → нужна персистентность находок (scratchpad), а не ещё больше изоляции или /compact."
+  },
+  {
+    "id": "f-context-04",
+    "domain": 5,
+    "task": "5.4",
+    "scenario": 4,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d5-07"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer has finished mapping how a legacy order service publishes events, using about 30 Read and Grep calls in the main session of your exploration agent. The context is now 85% full, mostly raw file contents. The agent has already saved its confirmed findings (topic names, publisher classes, file paths) to notes/order-events.md, its answers still cite specific classes, and no files have changed. The next step, in this same session, is to plan an outbox table from those findings. What should the engineer do now?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Use fork_session to branch off a separate planning session from the current point of the investigation."
+      },
+      {
+        "key": "B",
+        "text": "Run /compact to condense the verbose discovery output, and have the agent use notes/order-events.md for specifics."
+      },
+      {
+        "key": "C",
+        "text": "Start a new session without the notes and have the agent re-explore the service so planning sees only fresh results."
+      },
+      {
+        "key": "D",
+        "text": "Switch future discovery to the Explore subagent so its output stays isolated, then continue planning in this session."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "/compact предназначен ровно для этого случая: длинная исследовательская сессия, контекст заполнен многословным выводом discovery, а находки уже сохранены в notes/order-events.md, так что сжатие не потеряет конкретику. Файлы не менялись и задача та же, поэтому выбрасывать сессию незачем. Explore subagent и context: fork работают превентивно и не освобождают то, что уже лежит в контексте.",
+    "why_wrong_ru": {
+      "A": "fork_session копирует ту же историю вместе с 85% сырого вывода, поэтому новая ветка сразу начинается почти полной.",
+      "C": "Повторное исследование выбрасывает актуальные находки и тратит время на работу, которая уже сделана и сохранена.",
+      "D": "Explore subagent защищает только будущий поиск и не освобождает уже накопленные 85% контекста."
+    },
+    "takeaway_ru": "Находки уже в файле, контекст забит сырым выводом → /compact; Explore и fork только профилактика.",
+    "signal_ru": "\"Находки уже сохранены в notes\", \"файлы не менялись\", \"контекст 85% сырого вывода\" → /compact сейчас; Explore subagent не чистит уже накопленное."
+  },
+  {
+    "id": "f-context-05",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 1,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d5-02"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your support agent often handles customers with several orders in one conversation. Two problems appear in production. First, each lookup_order call returns about 46 fields (warehouse codes, carrier events, tax lines), and sessions with five or six lookups hit the token budget early, which triggers summarization of older turns. Second, after summarization the agent sometimes applies the refund amount of order #4471 to order #4486. Which TWO changes address these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Trim each lookup_order result to the few return-relevant fields before it is appended to the conversation history."
+      },
+      {
+        "key": "B",
+        "text": "Add an instruction to the summarization prompt to keep all important order details exact when condensing turns."
+      },
+      {
+        "key": "C",
+        "text": "Move the most recent lookup_order result to the start of every prompt so it is not lost in the middle of the context."
+      },
+      {
+        "key": "D",
+        "text": "Keep a structured per-order record (order ID, amount, status, promised date) in a layer outside the summary."
+      },
+      {
+        "key": "E",
+        "text": "Replace summarization with a sliding window of the last 12 turns so that no lossy summary is ever produced."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно. A решает первую проблему: 40+ полей на каждый lookup расходуют токены непропорционально пользе, и обрезка до релевантных полей замедляет заполнение контекста. D решает вторую: при нескольких заказах суммы и статусы хранят структурированно по order ID в отдельном слое вне суммаризованной истории, тогда сводка не сможет их перепутать. Позиционные приёмы и просьбы «быть точнее» не устраняют ни объём, ни потерю привязки.",
+    "why_wrong_ru": {
+      "B": "Просьба быть точнее оставляет факты внутри сжимаемого текста, и сводка по-прежнему может их размыть или перепутать.",
+      "C": "Перенос в начало помогает от lost in the middle, но не уменьшает объём 46 полей и не хранит суммы по каждому заказу.",
+      "E": "Скользящее окно просто выбрасывает ранние ходы вместе с суммами заказов, упомянутых в начале разговора."
+    },
+    "takeaway_ru": "Лишний объём инструментов → обрезать поля; факты нескольких заказов → структурированный слой вне сводки.",
+    "signal_ru": "\"46 полей на вызов\" → обрезка вывода; \"сумма #4471 применена к #4486 после суммаризации\" → структурированные факты по каждому заказу вне сводки, а не позиция."
+  },
+  {
+    "id": "f-context-06",
+    "domain": 5,
+    "task": "5.4",
+    "scenario": 4,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d5-07"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your productivity agent analyzes a legacy inventory platform in two phases. In phase 1, six subagents each mapped one module, and the coordinator now holds their reports. In phase 2, it spawns four subagents to design migration steps, passing each only a task line such as \"Design the migration for stock reservations.\" Traces show every phase-2 subagent spends 20-30 minutes re-reading files phase 1 already analyzed, and two of them misstate which modules write to the shared StockLedger table. Nothing has crashed. What should change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Have the coordinator keep a manifest that marks each phase-1 module as completed and load it before phase 2 starts."
+      },
+      {
+        "key": "B",
+        "text": "Pass every phase-2 subagent the complete phase-1 transcripts, including each tool result, so no detail is lost."
+      },
+      {
+        "key": "C",
+        "text": "Inject a summary of key phase-1 findings, like StockLedger writers and file paths, into each phase-2 prompt."
+      },
+      {
+        "key": "D",
+        "text": "Tell each phase-2 subagent to look up phase-1 results in the coordinator's conversation history, which they share."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Сабагенты не наследуют контекст координатора, поэтому всё, что им нужно из фазы 1, надо явно передать в промпте. Гайд рекомендует суммировать ключевые находки фазы перед запуском сабагентов следующей фазы и внедрять эту сводку в их начальный контекст. Manifest решает другую задачу, восстановление после сбоя, а сбоя не было, и статус «completed» не содержит самих находок.",
+    "why_wrong_ru": {
+      "A": "Manifest нужен для восстановления после сбоя, а отметка «completed» не говорит сабагенту, какие модули пишут в StockLedger.",
+      "B": "Полные транскрипты со всеми результатами инструментов раздувают контекст каждого сабагента и прячут ключевые факты в середине.",
+      "D": "Сабагенты не имеют доступа к истории координатора и не наследуют его контекст, всё нужно передавать явно в промпте."
+    },
+    "takeaway_ru": "Между фазами: сводка ключевых находок в промпт следующих сабагентов; manifest только для сбоев.",
+    "signal_ru": "\"Сбоя не было\", сабагенты \"перечитывают уже изученные файлы\" и получили \"только строку задачи\" → внедрить сводку фазы 1 в промпт, а не manifest."
+  },
+  {
+    "id": "f-context-07",
+    "domain": 5,
+    "task": "5.4",
+    "scenario": 4,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d5-07",
+      "d3-07"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your team is writing a context-management playbook for the exploration agent it uses on a 1,200-file legacy codebase. For each situation, the agent will apply one of four techniques: delegating to a subagent, keeping a scratchpad file, exporting state with a manifest, or running /compact. Which TWO of the following situations are best handled by delegating the work to a subagent? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "A nine-module analysis takes three hours, and if the coordinator process crashes it must resume without redoing finished modules."
+      },
+      {
+        "key": "B",
+        "text": "Before editing, the agent must find every test file that exercises the refund flow, and only the resulting file list matters."
+      },
+      {
+        "key": "C",
+        "text": "In a long session, answers start contradicting earlier conclusions about which service owns the session-timeout setting."
+      },
+      {
+        "key": "D",
+        "text": "The context is 90% full of discovery output that the agent has already digested and recorded in its notes file."
+      },
+      {
+        "key": "E",
+        "text": "The agent must trace payment dependencies through 14 services, which means hundreds of Grep hits along the way."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Каждая ситуация оценивается отдельно. B и E: это конкретные исследовательские вопросы с многословным поиском, а главному агенту нужен только итог, поэтому сабагент изолирует сотни совпадений Grep, пока главный агент держит высокоуровневую координацию. Остальные ситуации относятся к другим техникам: сбой решает manifest (A), противоречия ранним выводам решает scratchpad (C), уже переваренный и записанный вывод снимает /compact (D).",
+    "why_wrong_ru": {
+      "A": "Восстановление после сбоя решается экспортом состояния и manifest-ом, который координатор загружает при перезапуске.",
+      "C": "Противоречия ранним выводам лечатся scratchpad-файлом с подтверждёнными находками, а не изоляцией нового поиска.",
+      "D": "Находки уже сохранены, а контекст забит переваренным выводом, поэтому достаточно /compact."
+    },
+    "takeaway_ru": "Сабагент для объёмного поиска; scratchpad для согласованности; manifest для сбоев; /compact для уже накопленного.",
+    "signal_ru": "\"Важен только итоговый список\" и \"сотни совпадений Grep\" → сабагент; \"сбой\" → manifest; \"противоречит раннему\" → scratchpad; \"уже записано, контекст 90%\" → /compact."
+  },
+  {
+    "id": "f-context-08",
+    "domain": 3,
+    "task": "3.2",
+    "scenario": 2,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d3-03"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "Your team maintains five project skills in .claude/skills/ and is reviewing their SKILL.md frontmatter after complaints about cluttered sessions. A teammate proposes adding context: fork to every skill \"so that sessions stay clean.\" Judging each skill by how its output is used afterward, which TWO skills should get context: fork? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "/spike-cache: prototypes three caching approaches with long logs; developers only need the recommendation."
+      },
+      {
+        "key": "B",
+        "text": "/api-style: loads the team's naming and error-handling conventions that Claude must apply to edits in the current session."
+      },
+      {
+        "key": "C",
+        "text": "/scan-deprecations: reads about 200 modules and returns a 10-line list of deprecated API calls to fix next."
+      },
+      {
+        "key": "D",
+        "text": "/release-notes: drafts notes from git history, but in one run it pushed a tag; the team wants it read-only."
+      },
+      {
+        "key": "E",
+        "text": "/glossary: defines domain terms that Claude needs in almost every task the team gives it, every day."
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "explanation_ru": "Каждый навык оценивается отдельно. A (исследовательский контекст: прототипы, длинные логи) и C (объёмный анализ кода с коротким итогом) это ровно два случая из гайда, где context: fork изолирует навык от основной сессии и возвращает только результат. B, наоборот, должен влиять на основную сессию: в форке соглашения останутся у сабагента и не попадут в правки.",
+    "why_wrong_ru": {
+      "B": "В форке соглашения останутся в изолированном контексте сабагента и не будут применяться к правкам в основной сессии.",
+      "D": "Проблема в опасных действиях, её решает allowed-tools с ограничением до read-only команд, а не изоляция контекста.",
+      "E": "Термины нужны почти в каждой задаче, это универсальный стандарт для всегда загружаемого CLAUDE.md, а не навык."
+    },
+    "takeaway_ru": "context: fork, когда нужен только итог навыка; если результат должен влиять на сессию, форк вреден.",
+    "signal_ru": "\"Нужна только рекомендация\" и \"10-строчный список\" после объёмной работы → context: fork; \"применять в текущей сессии\" → не форк; \"опасная команда\" → allowed-tools."
+  },
+  {
+    "id": "f-context-09",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 3,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d5-02"
+    ],
+    "type": "multi",
+    "select": 2,
+    "stem": "In your research system, the document analysis subagent returns, for each source, its full reasoning chain plus long quoted passages, about 9,000 tokens per document. The synthesis subagent has a 30,000-token input budget, so on topics with eight sources the last reports are truncated. Separately, on topics with only four sources, where everything fits, synthesis still under-reports findings from the reports placed in the middle of its input. Which TWO changes address these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Move the synthesis subagent to a model with a larger context window so that all eight reports fit untruncated."
+      },
+      {
+        "key": "B",
+        "text": "Have the analysis subagent return structured data (key facts, citations, relevance scores) instead of reasoning chains."
+      },
+      {
+        "key": "C",
+        "text": "Open the synthesis input with a key-findings summary and put each document's findings under a section header."
+      },
+      {
+        "key": "D",
+        "text": "Shuffle the order of the document reports on every run so that no single source always lands in the middle of the input."
+      },
+      {
+        "key": "E",
+        "text": "Ask the analysis subagent to condense each document into a two-sentence prose summary without the quoted passages."
+      }
+    ],
+    "answer": [
+      "B",
+      "C"
+    ],
+    "explanation_ru": "Каждый вариант оценивается отдельно. B решает первую проблему: когда у downstream-агента ограниченный бюджет контекста, upstream-агент должен возвращать структурированные данные (ключевые факты, цитаты, оценки релевантности), а не многословные рассуждения. C решает вторую: вход помещается целиком, значит это эффект lost in the middle, и гайд предлагает сводку ключевых находок в начале и явные заголовки секций.",
+    "why_wrong_ru": {
+      "A": "Большее окно не уменьшает многословный вход и никак не влияет на пропуски из середины при четырёх источниках.",
+      "D": "Перемешивание лишь переносит потери на другие документы, а позиционный эффект остаётся.",
+      "E": "Двухфразовая проза теряет цитаты и метаданные, нужные синтезу для атрибуции, вместо структурированных фактов."
+    },
+    "takeaway_ru": "Не влезает → upstream возвращает структуру; влезает, но теряется середина → сводка в начало и заголовки.",
+    "signal_ru": "\"9 000 токенов рассуждений при бюджете 30 000\" → структурированные данные от upstream; \"всё помещается, но середина теряется\" → сводка ключевых находок в начало и заголовки секций."
+  },
+  {
+    "id": "f-context-10",
+    "domain": 5,
+    "task": "5.4",
+    "scenario": 4,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d5-07"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your coordinator and six subagents document a legacy claims platform, and all of them append free-form notes to one shared scratchpad, notes.md. The scratchpad works well for keeping findings consistent across questions. Yesterday the coordinator process crashed after about two hours. On restart it read notes.md, could not tell which subagents had finished or how far the in-progress one had got, and re-ran four of the six. How should the system be redesigned for crash recovery?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Have each agent export structured state to a known file, with a manifest the coordinator loads and injects on resume."
+      },
+      {
+        "key": "B",
+        "text": "Have the coordinator run /compact more often so its context already holds a short progress summary when it crashes."
+      },
+      {
+        "key": "C",
+        "text": "Resume the crashed coordinator with --resume and ask it which subagents it remembers having finished before the crash."
+      },
+      {
+        "key": "D",
+        "text": "Have every subagent append its full transcript to notes.md so the restarted coordinator has complete information."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Scratchpad хранит находки для согласованности ответов, но это свободный текст без надёжного статуса каждого агента. Для восстановления после сбоя гайд предлагает структурированный экспорт состояния: каждый агент пишет состояние в известное место, а координатор при перезапуске загружает manifest и внедряет состояние в промпты агентов. Тогда завершённые части пропускаются, а незавершённая продолжается с последней точки.",
+    "why_wrong_ru": {
+      "B": "/compact лишь сжимает историю беседы и не даёт структурированного статуса каждого агента, по которому можно надёжно пропустить готовое.",
+      "C": "Возобновлённая беседа заставляет координатора угадывать прогресс по истории, а не читать надёжный структурированный статус.",
+      "D": "Полные транскрипты делают notes.md ещё больше и не дают машиночитаемого статуса, кто закончил, а кто нет."
+    },
+    "takeaway_ru": "Scratchpad для находок, manifest со структурированным состоянием агентов для восстановления после сбоя.",
+    "signal_ru": "\"Сбой\" и \"не смог понять, кто закончил\" при общем свободном notes.md → структурированный экспорт состояния и manifest, а не scratchpad или --resume."
+  },
+  {
+    "id": "f-context-11",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 5,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d5-02"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI pipeline reviews large pull requests in per-file passes. Each pass returns compact JSON findings (file, line, severity, issue), about 600 tokens per file. A final step receives the findings for all 28 files, about 17,000 tokens in alphabetical file order and well within the context window, and writes the PR summary comment developers read. Audits show that in 6 of 20 PRs, critical findings from files in the middle of the list, such as an SQL injection in file 14, are missing from the summary, while findings from the first and last files always appear. What is the most effective change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Trim each per-file finding down to file, line, and severity so the aggregated input to the final step gets shorter."
+      },
+      {
+        "key": "B",
+        "text": "Have each per-file pass return its full reasoning along with the findings so the final step can judge severity better."
+      },
+      {
+        "key": "C",
+        "text": "Run the final step three times and keep only the findings that appear in at least two of the three summaries."
+      },
+      {
+        "key": "D",
+        "text": "Open the input with a list of critical findings across all files and place each file's findings under its own header."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Вход уже компактный, структурированный и помещается в окно, а теряются именно находки из середины списка, это эффект lost in the middle. Гайд предлагает ставить сводку ключевых находок в начало агрегированного входа и разбивать детали явными заголовками секций. Обрезка и структурирование лечат объём, а здесь проблема в позиции.",
+    "why_wrong_ru": {
+      "A": "Вход и так компактен и помещается в окно, а обрезка убирает описание проблемы и не меняет позиционный эффект.",
+      "B": "Полные рассуждения раздувают вход и глубже прячут находки из середины, усиливая проблему.",
+      "C": "Консенсус трёх прогонов отсеивает как раз те находки, которые теряются нестабильно, и пропуски из середины останутся."
+    },
+    "takeaway_ru": "Вход компактный и влезает, но середина теряется → ключевые находки в начало и заголовки секций.",
+    "signal_ru": "\"Компактный JSON\", \"17 000 токенов, помещается в окно\" и \"теряются файлы из середины\" → позиционный эффект: сводка в начало и заголовки, а не обрезка."
+  },
+  {
+    "id": "f-context-12",
+    "domain": 1,
+    "task": "1.7",
+    "scenario": 4,
+    "focus": "Управление контекстом",
+    "targets": [
+      "d5-07"
+    ],
+    "type": "single",
+    "select": 1,
+    "stem": "On Tuesday an engineer ran a named session, \"ledger-audit,\" in which the agent read 38 files of the ledger service and listed 11 suspected rounding bugs; the context ended about 45% full, and the agent's answers were still precise. On Wednesday morning she sees one overnight commit that touched only two of those files: RoundingPolicy.java and its unit test. She wants to keep verifying the remaining bugs. How should she continue?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Start a new session, inject a structured summary of Tuesday's findings, and have the agent re-read all 38 files."
+      },
+      {
+        "key": "B",
+        "text": "Resume with --resume ledger-audit and tell the agent which two files changed so it re-reads only those first."
+      },
+      {
+        "key": "C",
+        "text": "Resume with --resume ledger-audit and continue directly, since the agent will notice changed files while verifying."
+      },
+      {
+        "key": "D",
+        "text": "Use fork_session on ledger-audit so the overnight commit is analyzed in a branch separate from Tuesday's work."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Изменились только 2 из 38 файлов, контекст заполнен наполовину и ответы точные, значит прежний контекст в основном валиден, и возобновление сессии выгоднее. Гайд требует явно сообщить возобновлённой сессии, какие файлы изменились, чтобы она перечитала только их, а не исследовала всё заново. Новая сессия со сводкой нужна, когда устарела значительная часть результатов инструментов, а здесь это не так.",
+    "why_wrong_ru": {
+      "A": "Новая сессия со сводкой оправдана, когда результаты в основном устарели, а здесь она выбрасывает валидный контекст и заставляет перечитать 36 неизменных файлов.",
+      "C": "В контексте лежат старые результаты Read для двух изменённых файлов, и без явного сообщения агент будет опираться на них.",
+      "D": "fork_session нужен для параллельного сравнения расходящихся подходов, а не для учёта изменений в коде."
+    },
+    "takeaway_ru": "Контекст в основном валиден → --resume и явно назови изменённые файлы; устарел → новая сессия со сводкой.",
+    "signal_ru": "\"Изменились 2 из 38 файлов\", \"контекст 45%, ответы точные\" → --resume с указанием изменённых файлов, а не новая сессия со сводкой."
+  }
+]

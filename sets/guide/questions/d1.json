@@ -1,0 +1,604 @@
+[
+  {
+    "id": "d1-01",
+    "domain": 1,
+    "task": "1.1",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Your support agent's loop treats any response containing a text block as final. Production logs show that in 9% of refund conversations, Claude returns a short text block (\"Let me pull up that order.\") together with a lookup_order tool_use block; the loop exits, the tool never runs, and the customer receives only that sentence. What change correctly fixes the loop's control flow?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep looping while stop_reason is \"tool_use\", running the requested tools and returning results; stop on \"end_turn\"."
+      },
+      {
+        "key": "B",
+        "text": "Add a system prompt rule forbidding Claude from writing explanatory text in any response that also contains a tool call."
+      },
+      {
+        "key": "C",
+        "text": "Exit the loop only when the assistant text contains a closing phrase such as \"Is there anything else I can help with?\""
+      },
+      {
+        "key": "D",
+        "text": "Set tool_choice to \"any\" on every request so the model must call a tool and can never return a text-only response."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Цикл агента должен управляться полем stop_reason: при \"tool_use\" выполнить запрошенные инструменты, вернуть результаты и продолжить, при \"end_turn\" завершить. Наличие текстового блока ничего не говорит о завершении, потому что Claude может написать пояснение и в том же ответе запросить инструмент. Гайд прямо называет проверку текста ассистента как признака завершения анти-паттерном.",
+    "why_wrong_ru": {
+      "B": "Промпт-правило вероятностно и не исправляет логику цикла, которая по-прежнему выходит при наличии текста.",
+      "C": "Парсинг естественного языка для выхода из цикла является анти-паттерном из гайда: фраза может не появиться или появиться не к месту.",
+      "D": "Принудительный вызов инструмента на каждом запросе лишает модель возможности дать финальный ответ и ломает завершение по \"end_turn\"."
+    },
+    "takeaway_ru": "Цикл продолжается на \"tool_use\", завершается на \"end_turn\". Текст в ответе не сигнал."
+  },
+  {
+    "id": "d1-02",
+    "domain": 1,
+    "task": "1.1",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your codebase-exploration agent executes every tool Claude requests, but each next request contains only the original user message plus the note \"Tool executed successfully.\" Logs show the agent issuing the same Grep call for the service entry point 6–8 times per task until it hits the 25-iteration cap and returns nothing useful. What is the root cause and the correct fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "The iteration cap is too low for exploration work; raise it to 60 so the agent has enough turns to converge."
+      },
+      {
+        "key": "B",
+        "text": "Model-driven tool selection is unreliable here; replace it with a fixed Grep, Read, Glob sequence for every task."
+      },
+      {
+        "key": "C",
+        "text": "The agent is looping on itself; add a deduplication layer that rejects any tool call identical to an earlier one."
+      },
+      {
+        "key": "D",
+        "text": "Tool output never reaches the model; append each tool_use turn and its matching tool_result to the history."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Модель видит только «Tool executed successfully» и не получает самих результатов Grep, поэтому у неё нет новой информации и она повторяет тот же вызов. По гайду результаты инструментов добавляются в историю диалога между итерациями (блок tool_use ассистента и соответствующий tool_result), чтобы модель могла рассуждать о следующем шаге. Это устраняет первопричину, а не симптом.",
+    "why_wrong_ru": {
+      "A": "Лимит итераций как основной механизм остановки является анти-паттерном, а лишние итерации без результатов не дают модели новой информации.",
+      "B": "Жёсткая последовательность отказывается от решений модели и не решает проблему: результаты всё так же не попадают в контекст.",
+      "C": "Дедупликация гасит симптом, но модель по-прежнему не видит вывод Grep и не сможет выбрать осмысленный следующий шаг."
+    },
+    "takeaway_ru": "Результат инструмента обязан попасть в историю диалога, иначе модель работает вслепую."
+  },
+  {
+    "id": "d1-03",
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your research coordinator always runs the full pipeline: web search, document analysis, synthesis, then report generation. Metrics show that 40% of queries are narrow factual questions (\"When did the EU AI Act enter into force?\") that still take 6–9 minutes and return a 12-page report. Queries that arrive with attached internal PDFs also trigger web searches that add little value. What is the most effective redesign?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Deploy a separate classifier service in front of the coordinator that maps each query to one of several hard-coded pipeline variants."
+      },
+      {
+        "key": "B",
+        "text": "Run all four subagents in parallel instead of sequentially so that the full pipeline completes in less wall-clock time."
+      },
+      {
+        "key": "C",
+        "text": "Instruct the report generation subagent to produce a much shorter report whenever the original question appears simple."
+      },
+      {
+        "key": "D",
+        "text": "Have the coordinator analyze each query's requirements and invoke only the subagents that the query actually needs."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Роль координатора: анализировать запрос и решать, каких субагентов вызывать, исходя из его сложности, а не всегда прогонять весь пайплайн. Короткому фактическому вопросу может хватить одного поиска, а запросу с приложенными PDF нужен анализ документов без веб-поиска. Это прямо соответствует навыку динамического выбора субагентов из гайда.",
+    "why_wrong_ru": {
+      "A": "Отдельный классификатор с жёсткими вариантами пайплайна является избыточной инфраструктурой, эту задачу и должен решать координатор.",
+      "B": "Этапы зависят друг от друга (синтезу нужны результаты поиска), и параллельный запуск всё равно выполняет ненужную работу.",
+      "C": "Правка последнего звена не убирает лишние вызовы поиска и анализа, которые и занимают минуты."
+    },
+    "takeaway_ru": "Координатор выбирает субагентов под запрос, а не гонит всё через полный пайплайн."
+  },
+  {
+    "id": "d1-04",
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "To speed up research on \"global battery recycling regulation,\" the coordinator spawns three web search subagents with the identical prompt \"Research global battery recycling regulation.\" Logs show that 70% of the URLs returned across the three subagents are duplicates, and the synthesis agent spends much of its context reconciling repeated sources. What is the best fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Let the three search subagents message one another directly so each can skip sources the others have already found."
+      },
+      {
+        "key": "B",
+        "text": "Add a deduplication instruction to the synthesis agent's prompt so it discards repeated sources before combining them."
+      },
+      {
+        "key": "C",
+        "text": "Have the coordinator assign each subagent a distinct slice of the scope, such as a separate region or source type."
+      },
+      {
+        "key": "D",
+        "text": "Lower each subagent's maximum number of searches so that the overlap among their result sets becomes smaller."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Дублирование возникает потому, что координатор дал трём субагентам одну и ту же задачу. Гайд рекомендует разделять область исследования между субагентами по подтемам или типам источников, чтобы минимизировать дублирование. Например: регулирование ЕС, США и Азии или первичные законы против отраслевой аналитики.",
+    "why_wrong_ru": {
+      "A": "Прямое общение субагентов нарушает hub-and-spoke: вся коммуникация должна идти через координатора ради наблюдаемости и контроля.",
+      "B": "Это исправление ниже по потоку: поисковые вызовы и контекст всё равно тратятся на одинаковые источники.",
+      "D": "Меньше поисков сокращает покрытие, а не перекрытие, ведь задачи у субагентов остаются одинаковыми."
+    },
+    "takeaway_ru": "Параллельным субагентам нужны разные подтемы или типы источников, а не один и тот же промпт."
+  },
+  {
+    "id": "d1-05",
+    "domain": 1,
+    "task": "1.2",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Reviewers find that 30% of final reports on broad topics contain sections that the synthesis agent itself labels \"limited evidence available.\" Traces show the coordinator invokes the search and analysis subagents once with its initial decomposition, then forwards the first synthesis output straight to report generation. Which change most directly improves coverage?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Have the coordinator find gaps in synthesis output, re-delegate targeted queries, and re-run synthesis until coverage suffices."
+      },
+      {
+        "key": "B",
+        "text": "Instruct the synthesis agent to fill limited-evidence sections from its own general knowledge so reports read as complete."
+      },
+      {
+        "key": "C",
+        "text": "Have the synthesis agent self-rate its coverage from 1 to 10 and route reports scoring below 6 to a human editor."
+      },
+      {
+        "key": "D",
+        "text": "Give the report generation agent direct web search access so it can fill any limited-evidence sections on its own while writing."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Гайд описывает итеративный цикл доработки: координатор оценивает результат синтеза на пробелы, повторно делегирует поиску и анализу точечные запросы и снова запускает синтез, пока покрытие не станет достаточным. Сейчас координатор делает один проход и игнорирует сигналы о пробелах, которые синтез сам же выдаёт.",
+    "why_wrong_ru": {
+      "B": "Заполнение пробелов общими знаниями без источников даёт неподтверждённые утверждения в отчёте, который должен быть с цитатами.",
+      "C": "Самооценка модели плохо откалибрована, а передача человеку не добирает недостающие данные.",
+      "D": "Агент с инструментами вне своей специализации склонен ими злоупотреблять, а обход координатора ломает контроль потока информации."
+    },
+    "takeaway_ru": "Нашёл пробел в синтезе: точечный повторный поиск и снова синтез, пока не покрыто."
+  },
+  {
+    "id": "d1-06",
+    "domain": 1,
+    "task": "1.3",
+    "scenario": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are building the research coordinator with the Claude Agent SDK. Testing reveals two problems: (1) the coordinator writes \"I will now delegate this to the web search agent,\" but no subagent is ever spawned; (2) after a workaround, the synthesis subagent replies that it has \"no findings to synthesize,\" although the coordinator's conversation holds complete search and analysis results. Which two changes fix these problems? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Increase the synthesis subagent's context window so it can see the coordinator's full conversation history."
+      },
+      {
+        "key": "B",
+        "text": "Add \"Task\" to the coordinator's allowedTools so it can spawn subagents through the Task tool."
+      },
+      {
+        "key": "C",
+        "text": "Enable the shared_memory option in each AgentDefinition so subagents automatically read the coordinator's history."
+      },
+      {
+        "key": "D",
+        "text": "Add a system prompt line telling the coordinator to always actually invoke subagents rather than describe doing so."
+      },
+      {
+        "key": "E",
+        "text": "Pass the complete web search results and document analysis outputs directly in the synthesis subagent's prompt."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Это две независимые проблемы. Субагенты запускаются через Task tool, и координатор может его вызвать, только если \"Task\" есть в allowedTools; без этого он лишь описывает делегирование текстом. Субагенты не наследуют историю координатора, поэтому полные результаты поиска и анализа нужно явно передать в промпт субагента синтеза.",
+    "why_wrong_ru": {
+      "A": "Размер окна не влияет на наследование: субагент работает в изолированном контексте и не видит историю координатора.",
+      "C": "Опции shared_memory в AgentDefinition не существует, контекст субагенту передаётся только явно через промпт.",
+      "D": "Промпт не даёт права на инструмент, которого нет в allowedTools, поэтому координатор всё равно не сможет вызвать Task."
+    },
+    "takeaway_ru": "Нет \"Task\" в allowedTools, нет субагентов. Нет данных в промпте, субагент их не знает."
+  },
+  {
+    "id": "d1-07",
+    "domain": 1,
+    "task": "1.3",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your coordinator delegates four independent subtopics to web search subagents. Traces show it emits one Task call, waits for that subagent's result, and only then emits the next Task call in a later turn. Each subagent takes about 50 seconds, so this phase alone takes more than 3 minutes. What change reduces the latency of this phase most directly?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Switch the coordinator to a faster, smaller model so that each turn between Task calls completes more quickly."
+      },
+      {
+        "key": "B",
+        "text": "Merge the four subtopics into one Task call so a single subagent researches all of them in one pass."
+      },
+      {
+        "key": "C",
+        "text": "Have the coordinator emit all four Task tool calls in a single response so the subagents run in parallel."
+      },
+      {
+        "key": "D",
+        "text": "Cap each subagent's number of searches so every individual subagent finishes its work in less time."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Чтобы субагенты работали параллельно, координатор должен выдать несколько вызовов Task tool в одном ответе, а не по одному в отдельных ходах. Подтемы независимы, поэтому четыре субагента по 50 секунд выполнятся примерно за время самого долгого из них, а не за сумму.",
+    "why_wrong_ru": {
+      "A": "Время уходит на последовательные 50-секундные субагенты, а не на ходы координатора, и другая модель этого не меняет.",
+      "B": "Один субагент на все подтемы убирает и параллелизм, и фокус, работа снова идёт последовательно.",
+      "D": "Урезание поисков снижает качество и не устраняет последовательный запуск."
+    },
+    "takeaway_ru": "Независимые подзадачи: несколько Task-вызовов в одном ответе координатора."
+  },
+  {
+    "id": "d1-08",
+    "domain": 1,
+    "task": "1.3",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The coordinator's delegation prompts to the document analysis subagent are 14 numbered steps (\"1. Read the abstract. 2. Read the conclusions. 3. Extract three statistics...\"). When a source is a dataset appendix or a slide deck, the subagent still follows the steps literally and returns empty or irrelevant output for 22% of such sources. How should you rewrite the coordinator's prompts?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add numbered branches for every document type seen so far, such as appendices, slide decks, transcripts and spreadsheets."
+      },
+      {
+        "key": "B",
+        "text": "State the research goal and quality criteria for useful findings; let the subagent choose how to handle each source."
+      },
+      {
+        "key": "C",
+        "text": "Add a preprocessing step that converts every non-paper source into a standard paper-like layout before analysis."
+      },
+      {
+        "key": "D",
+        "text": "Require the subagent to report a confidence score per source and discard any source it rates below 7 of 10."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Гайд рекомендует, чтобы промпты координатора задавали цели исследования и критерии качества, а не пошаговые процедуры: так субагент может адаптироваться. Жёсткий процесс «прочитай аннотацию, затем выводы» ломается на источниках другой структуры. Цель и критерии позволяют субагенту самому решить, как обработать приложение с данными или слайды.",
+    "why_wrong_ru": {
+      "A": "Новые ветки под каждый тип делают промпт ещё хрупче и не помогут с типом документа, которого раньше не было.",
+      "C": "Конвейер предобработки является лишней инфраструктурой, а при конвертации теряется структура источника.",
+      "D": "Самооценка уверенности ненадёжна, а отбраковка источников уменьшает покрытие вместо исправления подхода."
+    },
+    "takeaway_ru": "Субагенту давай цель и критерии качества, а не пошаговый алгоритм."
+  },
+  {
+    "id": "d1-09",
+    "domain": 1,
+    "task": "1.4",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "When the agent escalates a billing dispute, it calls escalate_to_human with the note \"Customer is unhappy about a charge, please assist.\" Human agents work in a separate ticketing system without access to the conversation transcript, and they spend an average of 7 minutes re-asking customers questions the agent had already resolved. What should the escalation payload contain?",
+    "options": [
+      {
+        "key": "A",
+        "text": "A structured summary with the customer ID, the identified root cause, the disputed amount, and a recommended next action."
+      },
+      {
+        "key": "B",
+        "text": "The full raw conversation transcript attached to the ticket so the human agent can reread the entire exchange from the start."
+      },
+      {
+        "key": "C",
+        "text": "The agent's sentiment score for the customer so that human agents can prioritize the most frustrated customers first."
+      },
+      {
+        "key": "D",
+        "text": "A longer free-text note written in an empathetic tone that describes how the customer feels about the charge."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Оператор не видит транскрипт, поэтому при эскалации агент должен собрать структурированное резюме: ID клиента, найденную первопричину, сумму и рекомендуемое действие. Гайд называет это структурированным протоколом передачи (handoff). Оператор продолжает с того места, где остановился агент, а не начинает расследование заново.",
+    "why_wrong_ru": {
+      "B": "Сырой транскрипт заставляет оператора самому искать причину и сумму, и в нём нет готового вывода и рекомендации.",
+      "C": "Оценка тональности не отражает суть и сложность случая и не говорит оператору, что делать.",
+      "D": "Свободный текст про эмоции клиента не содержит ни ID, ни причины, ни суммы, ни следующего шага."
+    },
+    "takeaway_ru": "Эскалация человеку: ID клиента, первопричина, сумма, рекомендуемое действие. В структурированном виде."
+  },
+  {
+    "id": "d1-10",
+    "domain": 1,
+    "task": "1.4",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A customer writes: \"Order #8812 arrived damaged, I was charged twice for #8790, and I need to update my shipping address.\" Logs show the agent resolves the first concern and then ends its turn; the other two are handled only if the customer repeats them, and in 35% of such conversations the customer leaves before they are addressed. What design best fixes this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Instruct the agent to ask customers to open a separate conversation for each issue so every one of them gets full attention."
+      },
+      {
+        "key": "B",
+        "text": "Escalate every message that mentions more than one order number to a human, since multi-issue cases are complex."
+      },
+      {
+        "key": "C",
+        "text": "Raise max_tokens so the agent has enough room to address all three issues in a single long response."
+      },
+      {
+        "key": "D",
+        "text": "Have the agent split the message into distinct items, investigate each in parallel with shared context, then reply once."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Гайд описывает декомпозицию многосоставного запроса: разбить его на отдельные пункты, расследовать каждый параллельно с общим контекстом клиента и затем собрать единый ответ. Здесь три независимые темы (повреждение, двойное списание, адрес), и агент теряет две из них после первого ответа. Декомпозиция гарантирует, что ни одна тема не потеряется.",
+    "why_wrong_ru": {
+      "A": "Перекладывает работу на клиента и вредит цели 80%+ решения с первого обращения.",
+      "B": "Несколько проблем в сообщении не повод для эскалации, все три вопроса в пределах возможностей агента.",
+      "C": "Агент сам завершает ход после первой темы, ответ не обрезается по лимиту токенов."
+    },
+    "takeaway_ru": "Несколько проблем в одном сообщении: разбить, расследовать параллельно, ответить одним итогом."
+  },
+  {
+    "id": "d1-11",
+    "domain": 1,
+    "task": "1.5",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Your support agent's MCP tools come from different backend teams: lookup_order returns order dates as Unix timestamps and shipment status as numeric codes (3, 7, 9), while get_customer returns ISO 8601 strings. In 8% of return-eligibility decisions, the agent miscalculates the 30-day window or misreads a status. The backend tools cannot be changed this quarter. What is the most reliable fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add a status-code lookup table and an explanation of each tool's date format to the agent's system prompt."
+      },
+      {
+        "key": "B",
+        "text": "Add a PostToolUse hook that converts dates to one format and maps status codes to labels before the model sees them."
+      },
+      {
+        "key": "C",
+        "text": "Add few-shot examples showing the agent correctly computing 30-day return windows from each of the date formats."
+      },
+      {
+        "key": "D",
+        "text": "Instruct the agent to restate every date in ISO 8601 within its reasoning before it decides return eligibility."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "PostToolUse hook перехватывает результаты инструментов до того, как их обработает модель, и детерминированно приводит их к единому формату: даты в один формат, коды статусов в понятные метки. Гайд прямо приводит нормализацию Unix timestamps, ISO 8601 и числовых кодов статусов через PostToolUse как навык. Модели больше не нужно самой конвертировать форматы, и источник ошибки исчезает.",
+    "why_wrong_ru": {
+      "A": "Таблица в промпте оставляет конвертацию модели, это вероятностно и даёт тот же класс ошибок.",
+      "C": "Few-shot примеры снижают, но не устраняют ошибки в вычислениях дат.",
+      "D": "Пересчёт в рассуждениях делает та же модель, которая и ошибается при конвертации форматов."
+    },
+    "takeaway_ru": "Разнородные форматы от инструментов нормализуй в PostToolUse hook, до модели."
+  },
+  {
+    "id": "d1-12",
+    "domain": 1,
+    "task": "1.5",
+    "scenario": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "Company policy forbids the agent from issuing refunds above $500; such cases must go to a human. The system prompt states this rule clearly, yet an audit finds 11 process_refund calls between $520 and $1,900 last month, made after customers argued persuasively. You need guaranteed compliance without dropping these customers. Which two measures should you implement? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "A hook that intercepts outgoing process_refund calls and blocks any call whose amount exceeds $500."
+      },
+      {
+        "key": "B",
+        "text": "A rewritten system prompt that repeats the $500 rule in capital letters at both the start and the end."
+      },
+      {
+        "key": "C",
+        "text": "A PostToolUse hook that inspects completed refund results and logs any amount above $500 for weekly review."
+      },
+      {
+        "key": "D",
+        "text": "A redirect that routes each blocked refund to escalate_to_human with a structured summary of the case."
+      },
+      {
+        "key": "E",
+        "text": "Few-shot examples showing the agent politely declining refunds above $500 even when the customer pushes back."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Денежное правило требует гарантированного соблюдения, поэтому нужен hook, который перехватывает исходящий вызов process_refund и блокирует суммы выше $500 до выполнения. Гайд также требует перенаправлять заблокированное действие в альтернативный процесс, здесь в escalate_to_human, чтобы такие клиенты не терялись. Правило в промпте уже есть и уже нарушается: у промпт-инструкций ненулевая частота сбоев.",
+    "why_wrong_ru": {
+      "B": "Усиленный промпт остаётся вероятностным, а правило уже нарушалось при явной инструкции.",
+      "C": "PostToolUse срабатывает после выполнения: возврат уже проведён, лог лишь фиксирует нарушение задним числом.",
+      "E": "Few-shot примеры снижают частоту нарушений, но не дают гарантии, которой требует политика."
+    },
+    "takeaway_ru": "Денежный лимит: hook на исходящий вызов плюс перевод на эскалацию, а не промпт."
+  },
+  {
+    "id": "d1-13",
+    "domain": 1,
+    "task": "1.6",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer asks your productivity agent to \"add comprehensive tests to this legacy codebase\" (about 1,200 files, 6% coverage). The current implementation walks the files alphabetically and writes tests for each one in turn. After 4 hours it has produced 300 tests, mostly for small utility helpers, while the payment and authentication modules remain untested. What decomposition strategy should the agent use instead?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Map the codebase structure, find high-impact areas, then build a prioritized plan that adapts as dependencies surface."
+      },
+      {
+        "key": "B",
+        "text": "Keep the file-by-file approach but run several agents in parallel, each assigned its own alphabetical slice of the files."
+      },
+      {
+        "key": "C",
+        "text": "Generate tests only for files changed in the last 30 days, since recently modified code is the most likely to hold bugs."
+      },
+      {
+        "key": "D",
+        "text": "Send all 1,200 files to the model in a single request so it can design the whole test suite with a complete view."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Открытая задача вроде «добавь полноценные тесты в легаси» требует адаптивной декомпозиции: сначала понять структуру, выделить важные области (платежи, аутентификация), затем составить приоритетный план и корректировать его по мере обнаружения зависимостей. Алфавитный перебор фиксирован и не учитывает ценность, поэтому время уходит на утилиты.",
+    "why_wrong_ru": {
+      "B": "Параллелизм ускоряет тот же неприоритизированный перебор, но не направляет усилия на важные модули.",
+      "C": "Эвристика по дате изменений произвольна и может пропустить критичные, но давно не менявшиеся платежи и аутентификацию.",
+      "D": "Один огромный запрос размывает внимание модели и не даёт плана, который адаптируется к найденным зависимостям."
+    },
+    "takeaway_ru": "Открытая задача: сначала карта и приоритеты, потом план, который меняется по ходу."
+  },
+  {
+    "id": "d1-14",
+    "domain": 1,
+    "task": "1.6",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team uses the agent for two workflows. Workflow 1: every new service must pass the same review of five fixed aspects (configuration, logging, error handling, security headers, tests). Workflow 2: \"Find out why checkout latency rose 40% since last week,\" where the cause is unknown and could lie in code, queries or infrastructure. Which decomposition approach fits each workflow?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Dynamic adaptive decomposition for both workflows, because letting the model plan each run gives the most flexibility."
+      },
+      {
+        "key": "B",
+        "text": "Prompt chaining for both workflows, using one fixed step sequence so results stay consistent and easy to audit."
+      },
+      {
+        "key": "C",
+        "text": "Dynamic decomposition for Workflow 1 and prompt chaining for Workflow 2, since latency investigations follow set steps."
+      },
+      {
+        "key": "D",
+        "text": "Prompt chaining for Workflow 1 and dynamic decomposition, generating subtasks from each finding, for Workflow 2."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Предсказуемое ревью из фиксированных аспектов хорошо ложится на prompt chaining: последовательные шаги, каждый со своим фокусом. Расследование с неизвестной причиной открытое, и подзадачи должны рождаться из промежуточных находок, поэтому нужна динамическая декомпозиция. Гайд прямо противопоставляет эти два случая.",
+    "why_wrong_ru": {
+      "A": "Для фиксированного чек-листа динамическое планирование добавляет непредсказуемость без пользы.",
+      "B": "Фиксированная последовательность в открытом расследовании не может пойти за неожиданной находкой.",
+      "C": "Случаи перепутаны: у расследования нет заранее известных шагов, а у ревью они есть."
+    },
+    "takeaway_ru": "Предсказуемые шаги: prompt chaining. Неизвестная причина: динамическая декомпозиция."
+  },
+  {
+    "id": "d1-15",
+    "domain": 1,
+    "task": "1.7",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A developer spent 90 minutes with the agent analyzing a payment module: dependency mapping, hot paths and test gaps. She now wants to compare two refactoring approaches (extracting a strategy pattern vs. splitting the module into separate services) without repeating the analysis, and without the edits and reasoning of one exploration influencing the other. What should she do?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Continue in the same session, explore the first approach, then ask the agent to disregard it before exploring the second."
+      },
+      {
+        "key": "B",
+        "text": "Use fork_session to create two independent branches from the shared analysis baseline, one for each approach."
+      },
+      {
+        "key": "C",
+        "text": "Start two brand-new sessions and paste the original request into each so both repeat the full analysis from scratch."
+      },
+      {
+        "key": "D",
+        "text": "Resume the original session in two separate processes, one per approach, so both continue from the same history."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "fork_session создаёт независимые ветки от общей базы анализа: обе ветки получают результат 90 минут работы, но дальнейшие правки и рассуждения в одной не влияют на другую. Гайд приводит именно этот кейс: сравнение двух подходов к рефакторингу или тестированию от общего анализа кода.",
+    "why_wrong_ru": {
+      "A": "Просьба «забыть» ненадёжна: рассуждения о первом подходе остаются в контексте и влияют на второй.",
+      "C": "Повторяет 90 минут работы впустую, и два прогона могут дать разную базу выводов.",
+      "D": "Возобновление продолжает ту же сессию, а не создаёт независимую ветку, поэтому две линии работы смешаются в одной истории."
+    },
+    "takeaway_ru": "Сравнить два подхода от общего анализа: fork_session, а не одна сессия по очереди."
+  },
+  {
+    "id": "d1-16",
+    "domain": 1,
+    "task": "1.7",
+    "scenario": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Last Friday you ran a named Claude Code session, \"auth-migration,\" in which Claude read about 40 files and built a migration plan from them. Over the weekend a teammate merged a refactor that renamed several modules and rewrote roughly 60% of those files. On Monday you want to continue the migration planning. Which approach is most reliable?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Run claude --resume auth-migration and continue, since the earlier analysis is already loaded in the session context."
+      },
+      {
+        "key": "B",
+        "text": "Run claude --resume auth-migration and list the changed files so Claude re-analyzes only those before continuing."
+      },
+      {
+        "key": "C",
+        "text": "Start a new session, inject a structured summary of Friday's conclusions, and let Claude read the current code."
+      },
+      {
+        "key": "D",
+        "text": "Resume the session and run /compact first so the outdated tool results are condensed before you continue."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Когда большая часть прежних tool results устарела, надёжнее новая сессия со структурированным резюме выводов, чем возобновление с устаревшим контекстом. Гайд прямо разделяет случаи: возобновлять, когда прежний контекст в основном валиден, и начинать заново с резюме, когда результаты инструментов устарели. Здесь переписано около 60% файлов, и их старое содержимое в контексте будет противоречить реальному коду.",
+    "why_wrong_ru": {
+      "A": "В контексте лежат старые версии файлов, и Claude будет опираться на код, которого уже нет.",
+      "B": "Перечислить изменённые файлы верно при немногих правках, но при 60% переписанного кода старый контекст в основном недействителен.",
+      "D": "/compact сжимает устаревшие данные, но не делает их актуальными: в сжатом виде останутся старые имена модулей."
+    },
+    "takeaway_ru": "Контекст в основном валиден: --resume. Результаты устарели: новая сессия с резюме."
+  }
+]

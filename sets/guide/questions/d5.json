@@ -1,0 +1,382 @@
+[
+  {
+    "id": "d5-01",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Billing-dispute conversations with your support agent often exceed 30 turns, so older turns are replaced with a running summary every 10 turns. A QA review of 200 long sessions finds that in 18% of them the agent later quotes the wrong refund amount or forgets that the customer needs the refund before their card statement closes on the 15th. The summaries contain phrases such as \"customer disputes a charge and expects a refund soon.\" What is the most effective fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Trim lookup_order results to the handful of return-relevant fields so the context fills more slowly and summarization runs less often."
+      },
+      {
+        "key": "B",
+        "text": "Add an instruction to the summarization prompt to preserve all important details and avoid vague wording when condensing earlier turns."
+      },
+      {
+        "key": "C",
+        "text": "Store amounts, dates, order numbers and customer-stated deadlines in a persistent case-facts block included in every prompt."
+      },
+      {
+        "key": "D",
+        "text": "Switch to a model with a larger context window and stop summarizing, so the complete transcript stays available in every request."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Прогрессивная суммаризация систематически превращает точные значения (суммы, даты, обещанные клиенту сроки) в расплывчатые формулировки. Гайд предлагает выносить транзакционные факты в постоянный блок case facts, который включается в каждый запрос и не проходит через суммаризацию. Тогда историю можно сжимать сколько угодно, а критичные факты остаются дословными.",
+    "why_wrong_ru": {
+      "A": "Обрезка выводов инструментов экономит токены, но суммы и сроки всё равно рано или поздно пройдут через сжимающую суммаризацию.",
+      "B": "Инструкция «сохраняй важное» не гарантирует сохранность чисел и дат, это вероятностная заплатка без структуры.",
+      "D": "Большее окно лишь откладывает проблему: диалоги продолжают расти, а длинные входы страдают от эффекта lost in the middle."
+    },
+    "takeaway_ru": "Суммы, даты и обещания клиенту держи в отдельном блоке case facts, а не в суммаризованной истории."
+  },
+  {
+    "id": "d5-02",
+    "domain": 5,
+    "task": "5.1",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Before migrating a legacy billing monolith, your developer productivity agent spawns nine subagents, one per module. Their reports (about 4,000 tokens each) are concatenated in module order and passed to a final step that writes the migration-risk summary; the combined input fits comfortably in the context window. Reviewers notice that high-risk findings from modules 4–6, such as a shared mutable cache in InvoiceBatcher, are repeatedly missing, while findings from the first and last modules always appear. What is the most effective change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Switch the final step to a model with a larger context window so the nine module reports have more headroom."
+      },
+      {
+        "key": "B",
+        "text": "Shuffle the order of the module reports on every run so that no single module consistently lands in the middle of the input."
+      },
+      {
+        "key": "C",
+        "text": "Ask each subagent to return its full reasoning chain alongside its findings so the final step has more evidence."
+      },
+      {
+        "key": "D",
+        "text": "Open the input with a key-findings summary across all modules and put each module report under its own section header."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Симптом соответствует эффекту lost in the middle: модель надёжно обрабатывает начало и конец длинного входа и может пропускать находки из середины. Гайд предлагает размещать сводку ключевых находок в начале агрегированного входа, а детальные результаты организовывать под явными заголовками секций. Так риски из модулей 4–6 попадают в позицию, которую модель обрабатывает надёжно.",
+    "why_wrong_ru": {
+      "A": "Вход и так помещается в окно; проблема в позиционном эффекте, а не в объёме контекста.",
+      "B": "Перемешивание лишь переносит пропуски на другие модули, находки из середины всё равно теряются.",
+      "C": "Полные цепочки рассуждений раздувают вход и усиливают эффект; downstream-шагу нужны структурированные факты, а не многословный текст."
+    },
+    "takeaway_ru": "Длинный агрегированный вход: сводка ключевых находок в начало, детали под явными заголовками секций."
+  },
+  {
+    "id": "d5-03",
+    "domain": 5,
+    "task": "5.2",
+    "scenario": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your support agent meets its first-contact resolution target, but a quality review of 300 transcripts finds that it escalates some cases it should resolve and resolves some it should hand off. You are documenting the cases that must trigger escalate_to_human. Which TWO of the following situations should the agent escalate? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "A customer is angry that a delivery is six days late; the order qualifies for a standard shipping refund, and they have not asked for a person."
+      },
+      {
+        "key": "B",
+        "text": "A customer asks you to match a competitor's lower price; your policy covers price adjustments only for price drops on your own site."
+      },
+      {
+        "key": "C",
+        "text": "get_customer returns two accounts matching the customer's name, and the customer has not yet given an email address or order number."
+      },
+      {
+        "key": "D",
+        "text": "The agent rates its own confidence at 4/10 on a damaged-item replacement where the customer sent photos and policy clearly covers it."
+      },
+      {
+        "key": "E",
+        "text": "In the first message about a simple return, the customer writes: \"I want to talk to a human, not a bot. Please transfer me.\""
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Гайд называет надёжные триггеры эскалации: явная просьба клиента о человеке, пробелы или исключения в политике и невозможность продвинуться. Явную просьбу (E) нужно выполнить сразу, не начиная расследование, даже если вопрос простой. Политика молчит про ценовой матч с конкурентом (B), поэтому агент не должен сам придумывать исключение, это решение для человека.",
+    "why_wrong_ru": {
+      "A": "Фрустрация при решаемой проблеме: признать эмоции и предложить решение, эскалировать только если клиент повторит просьбу о человеке.",
+      "C": "При нескольких совпадениях агент должен запросить дополнительный идентификатор, а не передавать кейс человеку.",
+      "D": "Самооценка уверенности модели плохо откалибрована; кейс стандартный и покрыт политикой, его нужно решать самостоятельно."
+    },
+    "takeaway_ru": "Эскалация: явная просьба о человеке или пробел в политике, а не эмоции и не самооценка уверенности."
+  },
+  {
+    "id": "d5-04",
+    "domain": 5,
+    "task": "5.2",
+    "scenario": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "get_customer accepts a name and an optional email fragment. In about 6% of conversations it returns two to four matching accounts, for example three records for \"Maria Lopez.\" The agent currently selects the account with the most recent order and continues. An audit shows roughly one in five of these selections is the wrong account, and several refunds were issued against another customer's orders. What is the most appropriate change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "When several accounts match, have the agent ask the customer for another identifier, such as an email or order number."
+      },
+      {
+        "key": "B",
+        "text": "Refine the heuristic to score candidates on order recency, shipping region and name similarity, then select the top-scoring account."
+      },
+      {
+        "key": "C",
+        "text": "Escalate to a human every time get_customer returns more than one match, because identity ambiguity is a policy risk."
+      },
+      {
+        "key": "D",
+        "text": "Change get_customer to return only the single best fuzzy match so the agent never has to reason about ambiguous results."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Когда инструмент возвращает несколько совпадений, гайд требует уточнения у клиента через дополнительный идентификатор, а не выбора по эвристике. Любая эвристика, даже улучшенная, иногда ошибается, а ошибка здесь означает возврат денег по чужому заказу. Вопрос про email или номер заказа снимает неоднозначность дёшево и в рамках возможностей самого агента.",
+    "why_wrong_ru": {
+      "B": "Более сложная эвристика уменьшит, но не устранит ошибочный выбор аккаунта, хотя клиента можно просто спросить.",
+      "C": "Неоднозначность агент снимает сам одним уточняющим вопросом; эскалация здесь лишь снижает first-contact resolution.",
+      "D": "Сервер так же угадывает по эвристике, только теперь агент даже не видит, что совпадений было несколько."
+    },
+    "takeaway_ru": "Несколько совпадений клиента → спроси дополнительный идентификатор, не выбирай по эвристике."
+  },
+  {
+    "id": "d5-05",
+    "domain": 5,
+    "task": "5.3",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A report on microplastics in drinking water states that \"no peer-reviewed studies have measured concentrations in European municipal systems.\" A domain expert immediately names several. Logs show the document analysis subagent's call to the journal repository returned HTTP 503 on the first attempt and on two retries; the subagent then caught the error and returned {\"status\": \"success\", \"documents\": []}. The coordinator marked the subtask complete and passed the result to synthesis. What is the root cause of the incorrect claim?",
+    "options": [
+      {
+        "key": "A",
+        "text": "The coordinator's decomposition did not include European water systems as a distinct subtopic for the subagents."
+      },
+      {
+        "key": "B",
+        "text": "The synthesis agent lacks an instruction forbidding it from asserting the absence of evidence in final reports."
+      },
+      {
+        "key": "C",
+        "text": "The subagent reported an access failure as a successful empty result, so the coordinator could not detect the failure."
+      },
+      {
+        "key": "D",
+        "text": "The subagent's retry budget is too small; it should keep retrying the repository until it finally responds successfully."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Подагент подавил ошибку доступа и вернул пустой результат со статусом success, поэтому координатор не мог отличить «поиск выполнен, совпадений нет» от «поиск выполнить не удалось». Гайд называет такое тихое подавление ошибок антипаттерном и требует различать access failures и valid empty results. С корректным сигналом координатор мог бы повторить запрос позже, выбрать другой источник или пометить пробел в покрытии.",
+    "why_wrong_ru": {
+      "A": "Подзадача по документам была назначена, просто её вызов упал; декомпозиция здесь ни при чём.",
+      "B": "Это заплатка ниже по цепочке: синтез получил «успешный» пустой результат и не знает, что источник был недоступен.",
+      "D": "Бесконечные повторы не решают проблему: после любой неудачи ошибка всё равно будет замаскирована под пустой успех."
+    },
+    "takeaway_ru": "Пустой результат и ошибка доступа должны выглядеть для координатора по-разному."
+  },
+  {
+    "id": "d5-06",
+    "domain": 5,
+    "task": "5.3",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "During a run on the economic effects of a new trade policy, the academic database is down for six hours. The document analysis subagent retries locally, then reports a structured error to the coordinator with partial results: 2 of the 11 relevant papers. The coordinator proceeds without that source. Stakeholders later complain that the report's labor-market section, built on those two papers, reads with the same confidence as sections backed by dozens of sources. What change best addresses this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add coverage annotations to the synthesis output showing which findings are well supported and which areas have source gaps."
+      },
+      {
+        "key": "B",
+        "text": "Have the coordinator hold the report until the database recovers and every subagent returns complete results for its subtopic."
+      },
+      {
+        "key": "C",
+        "text": "Have the synthesis agent drop the labor-market section so that the report contains only findings that are well supported."
+      },
+      {
+        "key": "D",
+        "text": "Append a standard disclaimer to every report stating that some sources may have been unavailable during the research."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Ошибка уже обработана правильно: локальные повторы, затем структурированная ошибка с частичными результатами. Не хватает последнего шага из гайда: синтез должен содержать coverage annotations, показывающие, какие выводы хорошо подкреплены, а в каких темах есть пробелы из-за недоступных источников. Тогда читатель видит реальную степень уверенности по каждому разделу.",
+    "why_wrong_ru": {
+      "B": "Остановка всего отчёта из-за одного источника — антипаттерн; частичные результаты ценны, если пробелы явно помечены.",
+      "C": "Тихое удаление раздела скрывает пробел вместо того, чтобы о нём сообщить, и выбрасывает частично полезные данные.",
+      "D": "Общая оговорка не говорит, какой раздел пострадал, поэтому читатель не может откалибровать доверие."
+    },
+    "takeaway_ru": "Частичные результаты → coverage annotations: где выводы надёжны, а где пробел из-за источников."
+  },
+  {
+    "id": "d5-07",
+    "domain": 5,
+    "task": "5.4",
+    "scenario": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer uses your exploration agent for a three-hour session on an unfamiliar payments codebase, asking about 40 questions without restarting. Early answers cite specific classes such as RefundLedgerService and SettlementBatchJob, with file paths. Later answers contradict earlier ones and describe \"the typical service-layer pattern in codebases like this\" instead of the classes discovered earlier. What is the most effective change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Start a brand-new session for every question and let the agent re-explore the codebase from scratch each time."
+      },
+      {
+        "key": "B",
+        "text": "Move the agent to a model with a larger context window so the entire three-hour session fits without any degradation."
+      },
+      {
+        "key": "C",
+        "text": "Add a system prompt instruction requiring the agent to always name specific classes and files rather than describe general patterns."
+      },
+      {
+        "key": "D",
+        "text": "Have the agent keep a scratchpad file of key findings, such as class names and file paths, and reread it for later questions."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Ответы со ссылкой на «типичные паттерны» вместо конкретных классов — описанный в гайде признак деградации контекста в длинной сессии. Scratchpad-файл сохраняет ключевые находки за пределами контекстного окна, и агент опирается на него в следующих вопросах вместо размытой памяти. Дополняют это делегирование многословного исследования подагентам и /compact.",
+    "why_wrong_ru": {
+      "A": "Полное переисследование на каждый вопрос выбрасывает накопленное понимание и многократно повторяет одну и ту же работу.",
+      "B": "Большее окно не устраняет деградацию в длинном контексте, а лишь откладывает её.",
+      "C": "Инструкция не вернёт информацию, которая уже размылась в контексте; агенту нечем подкрепить конкретику."
+    },
+    "takeaway_ru": "Длинная сессия исследования → scratchpad-файл с ключевыми находками, к которому агент возвращается."
+  },
+  {
+    "id": "d5-08",
+    "domain": 5,
+    "task": "5.5",
+    "scenario": 6,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your invoice extraction pipeline shows 97% field-level accuracy on a 1,500-document labeled validation set. The operations lead wants to stop human review of extractions the model considers high-confidence. The corpus is 82% typed invoices, 12% scanned receipts and 6% multi-currency freight bills. Which TWO steps should you take before reducing human review? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Ask the model for a single 1–10 confidence rating per document and auto-approve every document rated 9 or higher."
+      },
+      {
+        "key": "B",
+        "text": "Break accuracy down by document type and by field to confirm performance is consistent in every segment, not just overall."
+      },
+      {
+        "key": "C",
+        "text": "Expand the validation set to 5,000 randomly drawn documents to narrow the error margin around the 97% aggregate figure."
+      },
+      {
+        "key": "D",
+        "text": "Have the model output field-level confidence scores and calibrate the auto-approve threshold on the labeled set."
+      },
+      {
+        "key": "E",
+        "text": "Send documents to human review only when the downstream system rejects them, since rejections reveal the errors that matter."
+      }
+    ],
+    "answer": [
+      "B",
+      "D"
+    ],
+    "explanation_ru": "Агрегатные 97% могут скрывать слабую точность на редких типах документов (6% фрахтовых счетов почти не влияют на среднее) или на отдельных полях. Гайд требует проверить точность по типу документа и по полю до автоматизации. Маршрутизация по уверенности работает, только если уверенность выдаётся на уровне поля и откалибрована по размеченному validation set.",
+    "why_wrong_ru": {
+      "A": "Некалиброванная самооценка на уровне документа ненадёжна и не показывает, какое именно поле ошибочно.",
+      "C": "Больше случайных документов с тем же составом лишь уточнит то же агрегатное число, где доминируют typed invoices.",
+      "E": "Отказы downstream ловят в основном формальные ошибки; правдоподобные, но неверные значения пройдут без проверки."
+    },
+    "takeaway_ru": "Перед сокращением ревью: точность по типам документов и полям плюс калиброванная field-level уверенность."
+  },
+  {
+    "id": "d5-09",
+    "domain": 5,
+    "task": "5.6",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Fact-checkers find that 30% of citations in your research reports point to a source that does not contain the cited claim, and some claims have no citation at all. The web search and document analysis subagents return prose summaries with a source list at the end. The synthesis agent condenses them into themed paragraphs, and the report agent then attaches citations by matching each paragraph's topic to the source lists. What change most directly fixes this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add a final verification subagent that searches the web for a supporting source for each claim in the finished report."
+      },
+      {
+        "key": "B",
+        "text": "Have subagents return structured claim-source mappings (source URL, excerpt, publication date) that synthesis must preserve."
+      },
+      {
+        "key": "C",
+        "text": "Instruct the synthesis agent to keep citations accurate and avoid merging claims from different sources into one sentence."
+      },
+      {
+        "key": "D",
+        "text": "Give the report agent the full text of every source document so it can locate the correct citation for each paragraph itself."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Атрибуция теряется при сжатии, когда находки суммаризуются без связки «утверждение → источник». Гайд требует, чтобы подагенты выдавали структурированные claim-source mappings (URL или имя документа, релевантный фрагмент, дата публикации), а синтез сохранял и объединял их, а не перефразировал. Тогда цитаты доходят до отчёта, а не восстанавливаются задним числом по теме абзаца.",
+    "why_wrong_ru": {
+      "A": "Поиск подтверждения задним числом может найти другой источник, а исходная связь утверждения с документом уже утрачена.",
+      "C": "Синтез получает прозу со списком источников в конце, связей нет уже на входе, и инструкцией их не восстановить.",
+      "D": "Полные тексты раздувают контекст, а агент всё равно угадывает атрибуцию вместо того, чтобы получить её от подагента."
+    },
+    "takeaway_ru": "Провенанс сохраняется только как структурная связка claim → source через весь пайплайн."
+  },
+  {
+    "id": "d5-10",
+    "domain": 5,
+    "task": "5.6",
+    "scenario": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "For a report on remote-work adoption, the document analysis subagent finds two credible sources covering the same year: a national statistics office survey reporting that 28% of employees work remotely at least once a week, and a large industry consortium study reporting 41%. The two studies define \"remote work\" differently. Currently the synthesis agent reports whichever figure appears first in its input. Which approach should the system adopt?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Report only the statistics office figure, since official government statistics are the more authoritative of the two sources."
+      },
+      {
+        "key": "B",
+        "text": "Report both figures with source attribution and each study's definition, in a section for contested findings."
+      },
+      {
+        "key": "C",
+        "text": "Report the midpoint of the two figures, about 34.5%, and cite both sources to reflect the overall weight of the evidence."
+      },
+      {
+        "key": "D",
+        "text": "Have the coordinator dispatch additional searches until a third source breaks the tie, then report the majority value."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "При конфликте статистики из надёжных источников гайд требует аннотировать конфликт с атрибуцией, а не выбирать одно значение произвольно. Методологический контекст (разные определения remote work) объясняет расхождение, а отдельный раздел для спорных выводов отделяет их от устоявшихся. Читатель видит оба значения и причину расхождения, а не случайно выбранную цифру.",
+    "why_wrong_ru": {
+      "A": "Выбор «более авторитетного» источника отбрасывает надёжные данные и скрывает от читателя само расхождение.",
+      "C": "Среднее двух разных определений не соответствует ни одному реальному измерению и выглядит точнее, чем есть.",
+      "D": "Голосование большинством подменяет анализ методологии подсчётом источников и тоже скрывает конфликт."
+    },
+    "takeaway_ru": "Конфликт надёжных источников → оба значения с атрибуцией и методологией, в разделе спорных выводов."
+  }
+]

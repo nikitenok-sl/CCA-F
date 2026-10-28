@@ -1,0 +1,468 @@
+[
+  {
+    "id": "s3-01",
+    "domain": 3,
+    "task": "3.1",
+    "scenario": 2,
+    "sheet": "/memory Command",
+    "type": "single",
+    "select": 1,
+    "stem": "Your project CLAUDE.md requires all HTTP calls to go through the internal `apiClient` wrapper, which adds retries and auth headers. Two of nine developers report that Claude keeps generating raw `fetch` calls in their sessions, while the other seven never see this. All nine work on the same branch, and the project CLAUDE.md has not changed for a month. What is the most effective first step?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Restate the rule at the top of the project CLAUDE.md, marked IMPORTANT, so it outweighs other instructions."
+      },
+      {
+        "key": "B",
+        "text": "Move the rule into `.claude/rules/http-client.md` with `paths: [\"src/**/*.ts\"]` so it loads on matching files."
+      },
+      {
+        "key": "C",
+        "text": "Run /memory in an affected developer's session to see which CLAUDE.md and memory files are loaded."
+      },
+      {
+        "key": "D",
+        "text": "Have the two developers upgrade Claude Code, since older releases may skip parts of a long CLAUDE.md."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Поведение расходится только у двух разработчиков при одинаковом проектном CLAUDE.md, значит у них отличается набор загруженных файлов памяти: например, личный ~/.claude/CLAUDE.md с противоречащей инструкцией. Команда /memory показывает, какие CLAUDE.md и файлы памяти реально загружены в сессии, поэтому это первый шаг диагностики. Менять конфигурацию до диагностики значит лечить симптом вслепую.",
+    "why_wrong_ru": {
+      "A": "Правку проектного файла получат все девять, а у семи всё и так работает; причина в том, что у двоих загружено что-то другое.",
+      "B": "Перенос правила меняет конфигурацию для всех вслепую, а причина расхождения у двоих так и не выяснена.",
+      "D": "Обновление версии это догадка без диагностики: сначала нужно увидеть, какие файлы памяти реально загружены."
+    },
+    "takeaway_ru": "Поведение отличается между сессиями → сначала /memory, чтобы увидеть загруженные файлы памяти."
+  },
+  {
+    "id": "s3-02",
+    "domain": 3,
+    "task": "3.1",
+    "scenario": 4,
+    "sheet": "CLAUDE.md Hierarchy",
+    "type": "single",
+    "select": 1,
+    "stem": "Your monorepo contains `legacy/billing-v1/`, about 300 ES5 files that run on an old embedded runtime and must not be modernized: no arrow functions, no `let`/`const`, no new dependencies. These rules were added to the root CLAUDE.md. Since then, engineers working in the modern TypeScript packages report Claude occasionally producing ES5-style code there, and the rules are irrelevant to 90% of sessions. Where should these rules live?",
+    "options": [
+      {
+        "key": "A",
+        "text": "In the root CLAUDE.md under a heading \"legacy/billing-v1 only\" so Claude can tell where they apply."
+      },
+      {
+        "key": "B",
+        "text": "In `legacy/billing-v1/CLAUDE.md`, so they load only when Claude works on files in that folder."
+      },
+      {
+        "key": "C",
+        "text": "In a /legacy-billing skill that engineers invoke before they start editing files in that directory."
+      },
+      {
+        "key": "D",
+        "text": "In the ~/.claude/CLAUDE.md of the three engineers who regularly maintain the billing-v1 code."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Правила привязаны к одной директории, поэтому им место в CLAUDE.md этой директории: такой файл действует для файлов внутри неё и не нагружает остальные сессии. Корневой CLAUDE.md загружается всегда, и ES5-ограничения начинают просачиваться в современный код. Если бы конвенция касалась файлов, разбросанных по многим директориям, правильным выбором был бы `.claude/rules/` с glob в `paths`.",
+    "why_wrong_ru": {
+      "A": "Корневой CLAUDE.md всё равно загружается в каждой сессии, а заголовок оставляет Claude угадывать границы применения.",
+      "C": "Skill требует явного вызова, и кто забудет его запустить, получит модернизированный legacy-код.",
+      "D": "User-level файл не попадает в VCS: другие инженеры, правящие billing-v1, правил не получат, а у этих троих они будут действовать во всех проектах."
+    },
+    "takeaway_ru": "Конвенции одной директории → CLAUDE.md в этой директории, а не корневой файл."
+  },
+  {
+    "id": "s3-03",
+    "domain": 3,
+    "task": "3.2",
+    "scenario": 4,
+    "sheet": "Skills vs CLAUDE.md",
+    "type": "multi",
+    "select": 2,
+    "stem": "Your team's root CLAUDE.md is 1,400 lines. About 600 of them are a step-by-step release procedure (version bump, changelog, tagging) used twice a month; it also holds short security rules that apply to all code. Separately, the input-validation standard every endpoint must follow lives only in a /validation-standards skill, and 35% of new endpoints ship without it because developers forget to invoke it. Which TWO changes best fix this configuration? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Move the release procedure into a project skill in `.claude/skills/` so it loads only when invoked."
+      },
+      {
+        "key": "B",
+        "text": "Move the security rules into a /security skill as well, since they are short and rarely needed in full."
+      },
+      {
+        "key": "C",
+        "text": "Add `context: fork` to the /validation-standards skill so that it runs automatically for every new endpoint."
+      },
+      {
+        "key": "D",
+        "text": "Move the input-validation standard out of the skill into the project CLAUDE.md so it always applies."
+      },
+      {
+        "key": "E",
+        "text": "Move the release procedure into the ~/.claude/CLAUDE.md of the two engineers who usually cut releases."
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "explanation_ru": "Skill подходит для задач по требованию: процедура релиза нужна дважды в месяц, и держать её в постоянно загружаемом CLAUDE.md значит тратить контекст в каждой сессии. Командный стандарт, который должен соблюдаться всегда, наоборот, нельзя держать в skill: он работает только при вызове, и забытый вызов даёт 35% эндпоинтов без валидации. Поэтому процедура уходит в skill, а стандарт в проектный CLAUDE.md.",
+    "why_wrong_ru": {
+      "B": "Правила безопасности универсальны, в skill их применение зависит от вызова, это та же ошибка, что с валидацией.",
+      "C": "`context: fork` изолирует выполнение skill в отдельном субагенте и не делает его автоматическим.",
+      "E": "User-level файл не шарится через VCS, остальные не смогут выпустить релиз, а у этих двоих процедура всё равно грузится в каждой сессии."
+    },
+    "takeaway_ru": "Процедура по запросу → skill; стандарт на каждый раз → CLAUDE.md."
+  },
+  {
+    "id": "s3-04",
+    "domain": 3,
+    "task": "3.2",
+    "scenario": 2,
+    "sheet": "Skill Frontmatter",
+    "type": "single",
+    "select": 1,
+    "stem": "Your team's project skill /design-options has Claude brainstorm five alternative designs for a feature, each with detailed pros, cons, and code sketches. Developers pick one option and then ask Claude, in the same session, to implement it. In review, 4 of the last 11 implementations mixed in parts of rejected alternatives, such as a retry queue from option 2 inside the chosen synchronous design. Which change to the skill best addresses this?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add `allowed-tools: Read, Grep` to the frontmatter so the skill cannot write any code while brainstorming."
+      },
+      {
+        "key": "B",
+        "text": "Add `context: fork` so brainstorming runs in an isolated sub-agent and returns only its result."
+      },
+      {
+        "key": "C",
+        "text": "Move the brainstorming instructions into CLAUDE.md so they are available in every session without invoking."
+      },
+      {
+        "key": "D",
+        "text": "Append a line to SKILL.md telling Claude to disregard the rejected options once the developer picks one."
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explanation_ru": "Подробный разбор пяти альтернатив остаётся в основном контексте и потом подмешивается в реализацию выбранного варианта. `context: fork` запускает skill в изолированном субагенте, и в основную сессию попадает только итоговый результат, а не весь исследовательский контекст. Гайд прямо называет брейншторм альтернатив случаем для `context: fork`.",
+    "why_wrong_ru": {
+      "A": "`allowed-tools` ограничивает инструменты, но текст альтернатив всё равно остаётся в основном контексте.",
+      "C": "CLAUDE.md грузится всегда: это добавит токены в каждую сессию и не изолирует вывод брейншторма.",
+      "D": "Инструкция «не учитывай» не удаляет текст из контекста, модель продолжает его видеть."
+    },
+    "takeaway_ru": "Исследовательский или объёмный вывод skill → `context: fork`, в основную сессию только итог."
+  },
+  {
+    "id": "s3-05",
+    "domain": 3,
+    "task": "3.3",
+    "scenario": 2,
+    "sheet": "Path-Scoped Rules — `.claude/rules/` Directory",
+    "type": "single",
+    "select": 1,
+    "stem": "Your repository has 14 services, each with SQL migrations under `services/<name>/db/migrations/`. The data team wrote migration conventions (every migration needs a down-step; no column drops without a deprecation window) into `services/billing/db/migrations/CLAUDE.md`. Billing migrations now follow the conventions, but migrations Claude writes for the other 13 services ignore them. New services are added every quarter. What is the most maintainable fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Copy the CLAUDE.md file into each service's migrations directory and add it to the new-service template."
+      },
+      {
+        "key": "B",
+        "text": "Move the conventions into the root CLAUDE.md so that every session sees them regardless of directory."
+      },
+      {
+        "key": "C",
+        "text": "Create a /migration-rules skill and ask developers to invoke it before Claude writes any migration."
+      },
+      {
+        "key": "D",
+        "text": "Move them to `.claude/rules/migrations.md` with `paths: [\"services/*/db/migrations/**/*\"]` frontmatter."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "CLAUDE.md в поддиректории действует только для файлов внутри неё, поэтому правила работают для billing и не работают для остальных 13 сервисов. Файл в `.claude/rules/` с glob в `paths` применяет одну конвенцию ко всем подходящим файлам в любом месте репозитория и автоматически покрывает новые сервисы. При этом правила загружаются только при работе с миграциями, а не в каждой сессии.",
+    "why_wrong_ru": {
+      "A": "14 копий плюс шаблон дают дрейф: каждую правку придётся вносить во все файлы, и копии разойдутся.",
+      "B": "Корневой CLAUDE.md грузится всегда, и миграционные правила тратят контекст в сессиях, где миграций нет.",
+      "C": "Skill требует явного вызова, забытый вызов снова даёт миграции без down-step."
+    },
+    "takeaway_ru": "Конвенция для файлов во многих директориях → `.claude/rules/` с glob, а не CLAUDE.md директории."
+  },
+  {
+    "id": "s3-06",
+    "domain": 3,
+    "task": "3.4",
+    "scenario": 2,
+    "sheet": "Plan Mode",
+    "type": "single",
+    "select": 1,
+    "stem": "A ticket asks you to replace the `full_name` column in the production `customers` table (40M rows) with `first_name` and `last_name`, then drop `full_name`. Only two files in your repository change: a migration and the ORM model. However, two other services read `full_name` directly, the drop cannot be undone, and several approaches are valid, such as a one-step migration or expand-and-contract with dual writes. How should you use Claude Code?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Use plan mode to map consumers and compare approaches, approve the plan, then execute directly."
+      },
+      {
+        "key": "B",
+        "text": "Use direct execution, because only two files change and the required end state is fully specified."
+      },
+      {
+        "key": "C",
+        "text": "Use direct execution, then ask Claude for a rollback migration in case consuming services break."
+      },
+      {
+        "key": "D",
+        "text": "Start with direct execution against staging and switch to plan mode only if the staging run fails."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Количество файлов не главный критерий: здесь необратимое изменение, внешние потребители колонки и несколько допустимых подходов, а это ровно случаи для plan mode. Правильный паттерн комбинированный: plan mode для исследования и выбора подхода, ревью плана, затем direct execution утверждённого плана. Так ошибка обнаруживается до того, как данные удалены.",
+    "why_wrong_ru": {
+      "B": "Два файла не делают задачу простой: риск в необратимости и в сервисах за пределами репозитория.",
+      "C": "После drop исходные значения `full_name` теряются, и rollback-миграция не восстановит их без потерь.",
+      "D": "Сложность известна заранее, а ждать провала на staging значит планировать уже после ошибки."
+    },
+    "takeaway_ru": "Необратимо, несколько подходов, внешние потребители → plan mode, даже если меняются два файла."
+  },
+  {
+    "id": "s3-07",
+    "domain": 3,
+    "task": "3.4",
+    "scenario": 2,
+    "sheet": "Plan Mode",
+    "type": "single",
+    "select": 1,
+    "stem": "Your team's guideline requires plan mode for every Claude Code task. After four weeks, the median time for one-file changes such as CSS spacing tweaks and copy edits rose from 4 to 13 minutes. On a 60-file logging-library migration, developers approved Claude's plan but then stayed in plan mode and had Claude re-plan each file before editing it, which took three days. Which guideline should replace the current one?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Keep plan mode for all tasks, but instruct Claude to limit plans for small changes to three bullet points."
+      },
+      {
+        "key": "B",
+        "text": "Use direct execution for every task, and ask Claude to state its intended approach in its first reply."
+      },
+      {
+        "key": "C",
+        "text": "Use direct execution for clear one-file changes; for big migrations, plan, approve, then execute."
+      },
+      {
+        "key": "D",
+        "text": "Use plan mode only after a direct-execution attempt fails its tests, re-planning from the failed state."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "Plan mode нужен для многофайловых изменений, архитектурных решений и выбора между несколькими подходами; правки CSS и текста в одном файле с ясной областью делаются через direct execution. Для большой миграции работает комбинированный паттерн: исследование и план в plan mode, утверждение, затем direct execution по утверждённому плану без повторного планирования каждого файла.",
+    "why_wrong_ru": {
+      "A": "Короткий план всё равно лишний шаг для тривиальной правки, а проблема с перепланированием миграции остаётся.",
+      "B": "Миграция на 60 файлов без plan mode рискует дорогой переделкой, когда зависимости всплывут поздно.",
+      "D": "Сложность миграции известна заранее, планировать после провала значит переделывать уже сделанное."
+    },
+    "takeaway_ru": "Тривиальная правка → direct; большая задача → plan, утверждение, затем direct execution."
+  },
+  {
+    "id": "s3-08",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 4,
+    "sheet": "Iterative Refinement Technique Hierarchy",
+    "type": "single",
+    "select": 1,
+    "stem": "An engineer asks Claude to write `normalize_log_line()`, which converts lines from a legacy service into structured JSON. She has rewritten the prose specification three times, yet every attempt differs: timestamps are sometimes converted to UTC and sometimes left in local time, and quoted multi-word values like `user=\"Ana Lima\"` are split inconsistently. She knows exactly what JSON each line should produce. What is the most effective next step?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Rewrite the specification once more as numbered rules covering timestamps, quoting, and field splitting."
+      },
+      {
+        "key": "B",
+        "text": "Ask Claude to interview her about the log format before it attempts another implementation."
+      },
+      {
+        "key": "C",
+        "text": "Switch to plan mode so that Claude designs the parsing approach before writing any more code."
+      },
+      {
+        "key": "D",
+        "text": "Give Claude two or three real log lines, each paired with the exact JSON it should produce."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "Когда прозу трактуют по-разному, ожидаемое преобразование лучше всего передают 2–3 конкретных примера вход/выход: они снимают двусмысленность, которую текст не снимает. Ещё одна переписанная спецификация стоит в иерархии техник последней. Здесь требования известны, не хватает только однозначности, поэтому примеры эффективнее интервью и plan mode.",
+    "why_wrong_ru": {
+      "A": "Три переписывания прозы уже не помогли, а более подробный текст сам по себе наименее эффективная техника.",
+      "B": "Interview pattern выявляет неучтённые соображения в незнакомой области, а здесь инженер точно знает нужный результат.",
+      "C": "Plan mode нужен для архитектурных и многофайловых решений, он не устраняет двусмысленность формата."
+    },
+    "takeaway_ru": "Прозу понимают по-разному → дай 2–3 пары вход/выход."
+  },
+  {
+    "id": "s3-09",
+    "domain": 3,
+    "task": "3.5",
+    "scenario": 2,
+    "sheet": "Iterative Refinement Technique Hierarchy",
+    "type": "multi",
+    "select": 2,
+    "stem": "You are implementing `calculate_proration()` for subscription billing. It has many edge cases (leap years, mid-cycle downgrades, zero-day periods) and must process 10,000 subscriptions in under 200 ms. Claude's first two attempts looked correct in review, but QA found five edge-case bugs, and each prose correction you send fixes one case while breaking another. Which TWO steps would most effectively drive the implementation to correct behavior? (Select TWO.)",
+    "options": [
+      {
+        "key": "A",
+        "text": "Ask Claude to write tests after it finishes the implementation, to confirm its code handles the edge cases."
+      },
+      {
+        "key": "B",
+        "text": "Write a test suite first that covers expected behavior, each edge case, and the 200 ms performance limit."
+      },
+      {
+        "key": "C",
+        "text": "Expand the prose requirements with a detailed paragraph per edge case, then ask Claude for a fresh attempt."
+      },
+      {
+        "key": "D",
+        "text": "Tell Claude not to report the task as done until it is confident that every edge case is handled correctly."
+      },
+      {
+        "key": "E",
+        "text": "Run the suite after each attempt and paste the specific failing tests back to guide the next fix."
+      }
+    ],
+    "answer": [
+      "B",
+      "E"
+    ],
+    "explanation_ru": "Это test-driven iteration: сначала тесты, фиксирующие ожидаемое поведение, граничные случаи и требование к производительности, затем итерации, в которых Claude получает конкретные падения тестов. Весь набор прогоняется на каждой итерации, поэтому исправление одного случая уже не ломает другой незаметно. Сообщения о падениях точнее любой прозы.",
+    "why_wrong_ru": {
+      "A": "Тесты, написанные по готовой реализации, повторяют её логику и ошибки, а не задают ожидаемое поведение.",
+      "C": "Подробная проза уже не помогла: сама по себе она наименее эффективна и не ловит регрессии.",
+      "D": "Самооценка уверенности модели не проверяет поведение, баги прошли ревью именно потому, что код выглядел правильным."
+    },
+    "takeaway_ru": "Много граничных случаев → тесты до реализации, потом итерации по падениям."
+  },
+  {
+    "id": "s3-10",
+    "domain": 3,
+    "task": "3.6",
+    "scenario": 5,
+    "sheet": "-p Flag (Non-Interactive Mode)",
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI review job runs `claude -p \"<review prompt>\" --output-format json`, and a script calls `JSON.parse(output.result)` to get the findings array. The prompt ends with \"Return only a JSON array of findings.\" In about 7% of runs the script crashes because `result` starts with prose such as \"Here are the issues I found:\" or wraps the array in a Markdown code fence. What is the most reliable fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Switch to `--output-format stream-json` and parse the last line, which holds the final findings."
+      },
+      {
+        "key": "B",
+        "text": "Strip code fences and any leading prose with a regex before calling `JSON.parse` on `result`."
+      },
+      {
+        "key": "C",
+        "text": "Add `--json-schema` with a findings schema and read the data from the `structured_output` field."
+      },
+      {
+        "key": "D",
+        "text": "Strengthen the prompt to \"Output raw JSON only, no prose, no code fences\" and repeat it at the top."
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explanation_ru": "`--output-format json` сам по себе только оборачивает ответ в JSON-конверт: поле `result` остаётся свободным текстом модели. С `--json-schema` Claude Code возвращает данные, соответствующие схеме, в поле `structured_output`, и скрипту больше не нужно разбирать прозу. Это документированный способ получить машиночитаемые находки в CI.",
+    "why_wrong_ru": {
+      "A": "`stream-json` это поток JSON-событий для вывода в реальном времени, и финальное событие содержит тот же текстовый `result`.",
+      "B": "Regex-очистка лечит симптом и ломается на следующем неожиданном формате ответа.",
+      "D": "Инструкция в промпте вероятностна: доля сбоев снизится, но не исчезнет."
+    },
+    "takeaway_ru": "`--output-format json` даёт конверт с прозой; данные по схеме дают `--json-schema` и `structured_output`."
+  },
+  {
+    "id": "s3-11",
+    "domain": 3,
+    "task": "3.6",
+    "scenario": 5,
+    "sheet": "-p Flag (Non-Interactive Mode)",
+    "type": "single",
+    "select": 1,
+    "stem": "Your PR review job runs `claude -p` on every push to an open pull request and posts each finding as an inline comment. On one PR with five pushes, the same eight unresolved findings were posted five times, burying two new issues. The prompt already says \"Do not repeat findings you reported on earlier runs.\" What change best prevents the duplicate comments?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Include the PR's existing comments in the prompt as \"ALREADY REPORTED\"; ask only for new issues."
+      },
+      {
+        "key": "B",
+        "text": "Prepend `/clear` to the prompt so that each run starts from a clean conversation without stale findings."
+      },
+      {
+        "key": "C",
+        "text": "Move the \"do not repeat\" instruction into the project CLAUDE.md so that every CI run loads it."
+      },
+      {
+        "key": "D",
+        "text": "In the posting script, skip any finding whose file path and line number already has a comment."
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explanation_ru": "Каждый запуск `claude -p` изолирован, и Claude не помнит, что сообщал в прошлых прогонах, поэтому инструкции «не повторяй» не на что опереться. Предыдущие находки нужно явно передать в контекст и попросить сообщать только новые проблемы. Тогда модель сопоставляет находки по смыслу, а не по номеру строки.",
+    "why_wrong_ru": {
+      "B": "`/clear` работает в интерактивном режиме, а каждый `-p` запуск и так начинается с чистого контекста; проблема в отсутствии памяти, а не в лишнем контексте.",
+      "C": "Перенос инструкции в CLAUDE.md не даёт Claude знания о прошлых комментариях, сравнивать по-прежнему не с чем.",
+      "D": "После новых коммитов номера строк сдвигаются, и та же находка на новой строке снова будет опубликована."
+    },
+    "takeaway_ru": "Между `-p` запусками памяти нет: прошлые находки передавай в промпт явно."
+  },
+  {
+    "id": "s3-12",
+    "domain": 3,
+    "task": "3.6",
+    "scenario": 5,
+    "sheet": "Session Review Quality",
+    "type": "single",
+    "select": 1,
+    "stem": "Your CI pipeline has two stages. Stage 1 runs `claude -p` to generate unit tests for changed modules. To give the reviewer full context, stage 2 runs `claude -p --resume $SESSION_ID --fork-session \"Critically review these tests for weak assertions and missing cases\"`. The reviewer approves 96% of generated tests, yet mutation testing shows that 40% of approved tests miss injected bugs. What is the most likely root cause and the best fix?",
+    "options": [
+      {
+        "key": "A",
+        "text": "The review prompt is vague; replace it with explicit criteria for what makes a test weak and what to skip."
+      },
+      {
+        "key": "B",
+        "text": "Reviews lack structure; add `--output-format json --json-schema` so the reviewer returns a findings list."
+      },
+      {
+        "key": "C",
+        "text": "One review pass is noisy; run the forked reviewer three times and approve only tests all three accept."
+      },
+      {
+        "key": "D",
+        "text": "The fork inherits the generator's reasoning and blind spots; review in a fresh `claude -p` run instead."
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "explanation_ru": "`--fork-session` создаёт новую сессию, но с полной историей генерации, поэтому ревьюер видит рассуждения автора тестов и разделяет его слепые зоны. Независимый запуск без контекста генерации, который получает только код, тесты и критерии ревью, находит больше проблем. Разделение должно быть по контексту, а не только по session ID.",
+    "why_wrong_ru": {
+      "A": "Явные критерии полезны, но ревьюер с контекстом автора продолжит принимать его же допущения.",
+      "B": "Структурированный вывод меняет формат находок, а не способность их найти.",
+      "C": "Три копии одного и того же контекста повторяют одни и те же слепые зоны, а консенсус ещё и подавит редкие находки."
+    },
+    "takeaway_ru": "Ревьюер не должен наследовать контекст автора: fork тоже наследует, нужен чистый запуск."
+  }
+]

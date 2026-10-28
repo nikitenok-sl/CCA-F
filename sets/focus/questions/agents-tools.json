@@ -1,0 +1,569 @@
+[
+ {
+  "id": "f-escalation-01",
+  "domain": 5,
+  "task": "5.2",
+  "scenario": 1,
+  "focus": "Эскалация и передача человеку",
+  "targets": [
+   "d5-03"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your support agent's first-contact resolution is 71% against an 80% target, and audits show it escalates the wrong cases. You are labeling recent transcripts as few-shot examples for the escalation criteria in its system prompt. Unless a case says otherwise, the agent has the tools and refund authority to resolve the underlying issue. Which TWO cases should be labeled as correct escalations? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "A customer disputes four charges across three orders from the past two months; each falls under the standard billing-error policy, and lookup_order returns full details."
+   },
+   {
+    "key": "B",
+    "text": "A customer asks to have loyalty points restored after a cancelled order was refunded; the refund policy covers money and store credit but never mentions points."
+   },
+   {
+    "key": "C",
+    "text": "A long-time subscriber calls this the worst service ever and threatens to cancel over a duplicate charge that the agent can reverse within its refund limit."
+   },
+   {
+    "key": "D",
+    "text": "Three lookups find no record of an order the customer proves with a receipt; it was placed through a partner store that none of the agent's tools can query."
+   },
+   {
+    "key": "E",
+    "text": "A self-check gives the agent a confidence of 0.35 on a warranty claim, although the product, purchase date, and defect all match the written warranty terms."
+   }
+  ],
+  "answer": [
+   "B",
+   "D"
+  ],
+  "explanation_ru": "Каждый вариант оценивается отдельно по триггерам эскалации из гайда. B: политика молчит о баллах лояльности, это пробел в политике, и агент не должен сам придумывать правило. D: агент не может продвинуться, потому что ни один инструмент не видит заказы партнёрского магазина. Сложность (A), эмоции (C) и самооценка уверенности (E) триггерами не являются: эти кейсы покрыты политикой, и агент решает их сам.",
+  "why_wrong_ru": {
+   "A": "Четыре списания это сложный, но полностью покрытый политикой кейс: сложность сама по себе не повод эскалировать.",
+   "C": "Тональность и угроза уйти не отражают сложность кейса; нужно признать недовольство и вернуть дубль списания.",
+   "E": "Самооценка уверенности модели плохо откалибрована, а условия гарантии совпадают полностью, кейс решается сам."
+  },
+  "takeaway_ru": "Эскалируй на просьбу о человеке, пробел в политике или тупик; не на сложность, эмоции и уверенность.",
+  "signal_ru": "\"Never mentions points\" и \"none of the agent's tools can query\" → пробел в политике и тупик. Сложность, гнев и 0.35 на покрытом кейсе не триггеры."
+ },
+ {
+  "id": "f-escalation-02",
+  "domain": 1,
+  "task": "1.4",
+  "scenario": 1,
+  "focus": "Эскалация и передача человеку",
+  "targets": [
+   "d1-09"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Company policy sends refunds above $500 to humans, so a hook blocks such process_refund calls and the agent calls escalate_to_human with {\"customer_id\": \"C-20931\", \"order_id\": \"77120\", \"amount\": 640}. Reviewers work in a separate queue without access to the transcript. They spend about 9 minutes per case re-checking what the agent had already established: the item was returned, the warehouse scanned it on May 3, and the refund is owed in full. What should the escalation payload add?",
+  "options": [
+   {
+    "key": "A",
+    "text": "The full conversation transcript and every raw tool result, so reviewers can independently verify each step the agent took."
+   },
+   {
+    "key": "B",
+    "text": "The agent's self-rated confidence and the customer's sentiment score, so reviewers can prioritize the queue more effectively."
+   },
+   {
+    "key": "C",
+    "text": "The root cause the agent established, the evidence it checked, and a recommended action, such as approving the $640 refund."
+   },
+   {
+    "key": "D",
+    "text": "Nothing more; reviewers should re-run get_customer and lookup_order themselves as an independent check before approving."
+   }
+  ],
+  "answer": [
+   "C"
+  ],
+  "explanation_ru": "Оператор не видит переписку, поэтому handoff должен быть структурированным резюме: ID клиента, первопричина, сумма и рекомендуемое действие. Сейчас в payload есть только идентификаторы и сумма, а вывод агента (товар возвращён, склад его принял, возврат положен целиком) и следующий шаг потеряны. Структура полей сама по себе не делает handoff полным: без первопричины и рекомендации оператор заново проводит расследование.",
+  "why_wrong_ru": {
+   "A": "Сырой транскрипт заставляет оператора самому искать вывод среди сообщений и не даёт рекомендации.",
+   "B": "Уверенность и тональность не говорят, почему положен возврат и что делать дальше.",
+   "D": "Повторная ручная проверка и есть те 9 минут, которые нужно убрать: агент уже всё установил."
+  },
+  "takeaway_ru": "Handoff человеку: ID, первопричина, сумма, рекомендуемое действие. Одни ID и сумма это ещё не handoff.",
+  "signal_ru": "\"Without access to the transcript\" и \"re-checking what the agent had already established\" → в payload не хватает первопричины и рекомендации, а не сырых данных."
+ },
+ {
+  "id": "f-escalation-03",
+  "domain": 5,
+  "task": "5.2",
+  "scenario": 1,
+  "focus": "Эскалация и передача человеку",
+  "targets": [
+   "d5-03"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your system prompt says: \"Before escalating, always investigate the account and attempt a resolution.\" A customer opens with: \"Order #6620 was charged twice. I want a human agent, please transfer me now.\" The duplicate charge is within the agent's refund limit. In such conversations the agent runs get_customer and lookup_order, then proposes a refund; 38% of these customers abandon the chat before reaching anyone, and CSAT is 1.9/5. How should the agent handle this opening?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Transfer to a human right away with the order number and stated issue, without running the investigation first."
+   },
+   {
+    "key": "B",
+    "text": "Acknowledge the request, offer the refund once, and escalate only if the customer repeats that they want a person."
+   },
+   {
+    "key": "C",
+    "text": "Run get_customer and lookup_order first, so that the human receives a verified account and order with the handoff."
+   },
+   {
+    "key": "D",
+    "text": "Issue the duplicate-charge refund at once since it is within the limit, then offer a transfer if they still ask."
+   }
+  ],
+  "answer": [
+   "A"
+  ],
+  "explanation_ru": "Явную просьбу о человеке гайд велит выполнять сразу, не начиная расследование, даже если вопрос простой и агент мог бы его решить. Правило в промпте \"сначала расследуй\" противоречит этому и должно делать исключение для явной просьбы. Схема \"признать, предложить решение, эскалировать при повторе\" подходит раздражённому клиенту, который о человеке не просил, а здесь просьба уже прозвучала.",
+  "why_wrong_ru": {
+   "B": "Предложить решение и ждать повтора можно, когда клиент о человеке не просил; здесь просьба явная.",
+   "C": "Расследование перед передачей и есть задержка, которую клиент отверг; для handoff хватит номера заказа и сути проблемы.",
+   "D": "Действие без согласия клиента игнорирует его явную просьбу о человеке, даже если возврат в пределах лимита."
+  },
+  "takeaway_ru": "Клиент явно просит человека: передавай сразу, без расследования и встречных предложений.",
+  "signal_ru": "\"I want a human agent, please transfer me now\" в первом сообщении → эскалация сразу. Правило \"ждать повтора\" только для недовольства без такой просьбы."
+ },
+ {
+  "id": "f-escalation-04",
+  "domain": 5,
+  "task": "5.2",
+  "scenario": 1,
+  "focus": "Эскалация и передача человеку",
+  "targets": [
+   "d5-03"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "An audit of your support agent finds two problems. (1) In about 5% of conversations, get_customer returns two or three accounts for the same name; the agent escalates all of them, adding 140 tickets a week that humans close in under a minute by asking for an email. (2) Customers who sold an item ask to transfer its remaining warranty to the buyer; the warranty policy covers repairs and replacements but says nothing about transfers, and the agent approves them itself by citing the repair clause. Which TWO changes should you make? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "When several accounts match, ask the customer for another identifier, such as an email or order number."
+   },
+   {
+    "key": "B",
+    "text": "When several accounts match, select the one whose order history best fits the customer's description, then continue."
+   },
+   {
+    "key": "C",
+    "text": "When policy is silent, have the agent apply the closest written clause, so warranty transfers follow the repair rules."
+   },
+   {
+    "key": "D",
+    "text": "Keep escalating multiple matches, but only when the agent's self-rated certainty about the right account is below 0.7."
+   },
+   {
+    "key": "E",
+    "text": "Escalate warranty-transfer requests to a human with a structured summary, since the policy does not address them."
+   }
+  ],
+  "answer": [
+   "A",
+   "E"
+  ],
+  "explanation_ru": "Каждый вариант оценивается отдельно, в стеме две разные подзадачи. A решает подзадачу 1: несколько совпадений это повод уточнить идентификатор у клиента, а не эскалация и не выбор по эвристике. E решает подзадачу 2: политика молчит о передаче гарантии, это пробел, и решение за человеком. Ловушка в зеркальности: неоднозначность данных агент снимает сам вопросом клиенту, а пробел в политике закрывает человек.",
+  "why_wrong_ru": {
+   "B": "Выбор аккаунта по эвристике рискует действиями по чужому аккаунту; нужно спросить идентификатор.",
+   "C": "Растягивать ближайший пункт на неописанный случай значит придумывать политику, это решение для человека.",
+   "D": "Самооценка уверенности ненадёжна, а эскалировать неоднозначность не нужно: её снимает один вопрос клиенту."
+  },
+  "takeaway_ru": "Несколько совпадений: спроси идентификатор. Политика молчит: эскалируй. Не путай эти два случая.",
+  "signal_ru": "\"Humans close in under a minute by asking for an email\" → агент сам спрашивает идентификатор. \"Says nothing about transfers\" → пробел в политике, эскалация."
+ },
+ {
+  "id": "f-escalation-05",
+  "domain": 5,
+  "task": "5.2",
+  "scenario": 1,
+  "focus": "Эскалация и передача человеку",
+  "targets": [
+   "d5-03"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "To protect CSAT, your team added a rule: escalate whenever the sentiment model scores a customer message below -0.6. After two months, 31% of escalations are routine cases, such as late-delivery credits and damaged-item replacements with photos, where customers were angry but never asked for a person. Human queue wait time grew from 4 to 19 minutes, and first-contact resolution fell from 78% to 64%. What should replace the sentiment rule for these cases?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Raise the threshold to -0.85, so that only the angriest customers are escalated and routine cases stay with the agent."
+   },
+   {
+    "key": "B",
+    "text": "Replace sentiment with the agent's self-rated confidence and escalate whenever it rates itself below 6 out of 10."
+   },
+   {
+    "key": "C",
+    "text": "Route negative-sentiment conversations to a dedicated senior queue, so their wait no longer affects other customers."
+   },
+   {
+    "key": "D",
+    "text": "Acknowledge the frustration, offer the in-policy resolution, and escalate if the customer then asks for a person."
+   }
+  ],
+  "answer": [
+   "D"
+  ],
+  "explanation_ru": "Тональность не отражает сложность кейса, поэтому порог по sentiment эскалирует решаемые проблемы. Гайд предписывает для раздражённого клиента с решаемой проблемой признать недовольство и предложить решение, а эскалировать, только если клиент повторит, что хочет человека. Подкручивание порога (A) оставляет тот же ненадёжный сигнал, просто срабатывает реже.",
+  "why_wrong_ru": {
+   "A": "Другой порог сохраняет sentiment как триггер: очень злой клиент с простой заменой всё равно уйдёт человеку.",
+   "B": "Самооценка уверенности модели так же плохо откалибрована и тоже не отражает сложность кейса.",
+   "C": "Отдельная очередь лечит время ожидания, но решаемые кейсы по-прежнему уходят людям."
+  },
+  "takeaway_ru": "Злой клиент с решаемой проблемой: признай, предложи решение, эскалируй при повторной просьбе.",
+  "signal_ru": "\"Angry but never asked for a person\" и \"routine cases\" → признать и предложить решение. Порог sentiment, даже более строгий, остаётся ненадёжным триггером."
+ },
+ {
+  "id": "f-coordinator-01",
+  "domain": 1,
+  "task": "1.2",
+  "scenario": 3,
+  "focus": "Координатор: декомпозиция и делегирование",
+  "targets": [
+   "off-07"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "For the topic \"barriers to electric vehicle adoption in Europe,\" the coordinator's log shows three Task calls: \"public charging density,\" \"charger speed standards,\" and \"home charging access.\" Every subagent succeeds, and the synthesis agent's coverage annotations mark all three subtopics as well-supported. Policy analysts reject the report because it ignores purchase cost, range anxiety, resale values, and government incentives. A teammate proposes an iterative refinement loop driven by the synthesis agent's gap annotations. What change addresses the root cause?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Add a refinement loop in which the coordinator re-delegates the gaps that the synthesis agent annotates until none remain."
+   },
+   {
+    "key": "B",
+    "text": "Broaden the web search agent's queries with general terms like \"EV adoption barriers\" so it also finds non-charging sources."
+   },
+   {
+    "key": "C",
+    "text": "Revise the coordinator's decomposition so its subtopics span the topic's dimensions, such as cost, range, and incentives."
+   },
+   {
+    "key": "D",
+    "text": "Instruct the synthesis agent to add sections on cost and range from its general knowledge when no sources cover them."
+   }
+  ],
+  "answer": [
+   "C"
+  ],
+  "explanation_ru": "Субагенты отработали, а покрытия нет, значит пробел возник при декомпозиции: координатор разбил тему только на подтемы про зарядку. Цикл уточнения (A) полезен, но здесь не сработает: synthesis сверяет покрытие с назначенными подтемами и честно отмечает их как хорошо покрытые, пробелов для повторного поиска нет. Исправлять нужно список подтем у координатора.",
+  "why_wrong_ru": {
+   "A": "Synthesis оценивает покрытие только по назначенным подтемам и отмечает их как полные, поэтому цикл ничего не запустит.",
+   "B": "Поисковый агент правильно искал по назначенной подтеме; расширение его запросов размывает разбиение, а не чинит его.",
+   "D": "Разделы из общих знаний без источников дают непроверенные утверждения и не чинят декомпозицию."
+  },
+  "takeaway_ru": "Субагенты отработали, а темы нет: чини декомпозицию координатора, цикл уточнения этот пробел не увидит.",
+  "signal_ru": "\"Every subagent succeeds\" и \"mark all three subtopics as well-supported\" → пробел в декомпозиции координатора; цикл по пометкам synthesis его не найдёт."
+ },
+ {
+  "id": "f-coordinator-02",
+  "domain": 1,
+  "task": "1.3",
+  "scenario": 3,
+  "focus": "Координатор: декомпозиция и делегирование",
+  "targets": [
+   "d1-08"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Your coordinator's Task prompt to the synthesis subagent is a procedure that has grown to 11 numbered steps (\"1. List findings per source in the order received. 2. Write one paragraph per source...\"). Each time reviewers report a defect, the team adds a step, yet new defects keep appearing: when two sources disagree, both figures sit in separate paragraphs without comment, and a single blog post gets as much space as three peer-reviewed studies. How should the coordinator's prompt be redesigned?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Add steps 12 and 13: compare every numeric figure across sources, then sort sources by quality tier before writing paragraphs."
+   },
+   {
+    "key": "B",
+    "text": "State the question the report must answer and quality criteria, such as flagged conflicts, and let synthesis decide how."
+   },
+   {
+    "key": "C",
+    "text": "Move the 11 steps from the Task prompt into the synthesis agent's system prompt so the same procedure applies on every invocation."
+   },
+   {
+    "key": "D",
+    "text": "Add a review subagent after synthesis that checks the output against all 11 steps and sends it back whenever a step was skipped."
+   }
+  ],
+  "answer": [
+   "B"
+  ],
+  "explanation_ru": "Промпт координатора должен задавать цель и критерии качества, а не пошаговую процедуру: тогда субагент сам решает, как сводить источники разной силы и что делать с противоречиями. Добавление шагов под каждый найденный дефект (A) удлиняет процедуру, но следующий непредусмотренный случай опять её сломает, что и показывает история промпта. Перенос шагов в system prompt или проверка их исполнения сохраняют ту же процедуру.",
+  "why_wrong_ru": {
+   "A": "Новые шаги закрывают два известных дефекта, но процедура остаётся хрупкой, и новые дефекты продолжат появляться.",
+   "C": "Перенос тех же 11 шагов в system prompt меняет место процедуры, но не её жёсткость.",
+   "D": "Проверка исполнения шагов закрепляет процедуру, а дефекты возникают именно при её буквальном выполнении."
+  },
+  "takeaway_ru": "Субагенту давай цель и критерии качества; новые шаги под каждый дефект не помогут.",
+  "signal_ru": "\"Each time reviewers report a defect, the team adds a step, yet new defects keep appearing\" → проблема в самой процедуре; нужны цель и критерии, а не шаг 12."
+ },
+ {
+  "id": "f-coordinator-03",
+  "domain": 1,
+  "task": "1.2",
+  "scenario": 3,
+  "focus": "Координатор: декомпозиция и делегирование",
+  "targets": [
+   "off-07"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Reviewers logged five recurring defects across 40 of last week's research reports. For each defect you must decide where it originates: in what the coordinator assigned (which subtopics and scope each subagent received), or in how a subagent carried out an assignment that was correctly scoped. Which TWO defects originate in the coordinator's assignments? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "The document analysis subagent returns 6,000-token prose summaries with full reasoning, and synthesis runs out of context before the last third."
+   },
+   {
+    "key": "B",
+    "text": "For \"remote work's effect on cities,\" the subtopics were office vacancy, leases, and conversions; housing, transit, and retail are absent."
+   },
+   {
+    "key": "C",
+    "text": "The synthesis subagent received two conflicting market-size estimates but merged them into one average without saying which source gave which."
+   },
+   {
+    "key": "D",
+    "text": "A web search subagent timed out on one query and returned an empty result marked as success, so nothing was retried for that subtopic."
+   },
+   {
+    "key": "E",
+    "text": "Two web search subagents were given \"US AI chip export controls\" and \"US semiconductor trade policy,\" and 60% of their sources overlap."
+   }
+  ],
+  "answer": [
+   "B",
+   "E"
+  ],
+  "explanation_ru": "Каждый вариант оценивается отдельно: дефект возник в том, что координатор поручил, или в том, как субагент выполнил верно поставленную задачу. B: список подтем покрывает только офисную недвижимость, это слишком узкая декомпозиция координатора. E: координатор выдал двум агентам пересекающиеся области, а делить scope без дублирования должен он. A, C и D возникают при исполнении задачи с правильным scope, поэтому их чинят у соответствующего субагента.",
+  "why_wrong_ru": {
+   "A": "Многословный вывод исправляют у upstream-агента: пусть возвращает структурированные факты и цитаты, задача ему поставлена верно.",
+   "C": "Сведение противоречивых цифр в среднее без атрибуции это ошибка synthesis, а не разбиения задачи.",
+   "D": "Тайм-аут, выданный за пустой успех, исправляют в обработке ошибок субагента: структурированная ошибка координатору."
+  },
+  "takeaway_ru": "Чего нет в списке подтем или что в нём пересекается, чинят в координаторе.",
+  "signal_ru": "\"The subtopics were\" и \"were given ... overlap\" описывают назначение задач → координатор. Формат вывода, слияние цифр и тайм-аут возникают при исполнении задачи."
+ },
+ {
+  "id": "f-coordinator-04",
+  "domain": 1,
+  "task": "1.3",
+  "scenario": 3,
+  "focus": "Координатор: декомпозиция и делегирование",
+  "targets": [
+   "d1-08",
+   "off-07"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "For \"regulation of microplastics in consumer products,\" the coordinator assigns four subtopics: EU, United States, Asia-Pacific, and international agreements, and reviewers agree this split covers the topic. Each Task prompt, however, reads: \"Run exactly 3 searches of the form '<region> microplastics law', open the top 2 results, and summarize them.\" Reports cite mostly news coverage, miss binding legal texts and regulator consultations, and the Asia-Pacific section is nearly empty. A teammate proposes splitting the work into 12 country-level subtopics. What is the best change?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Re-decompose the topic into 12 country-level subtopics, so that each subagent's three searches cover a much smaller area."
+   },
+   {
+    "key": "B",
+    "text": "Extend the recipe to six searches with the top five results each, so that binding legal texts are more likely to surface."
+   },
+   {
+    "key": "C",
+    "text": "Add a filter in the document analysis agent that drops news articles, so only primary sources reach the synthesis agent."
+   },
+   {
+    "key": "D",
+    "text": "Replace the recipe with a goal and quality criteria, like primary legal texts with dates, and let agents choose queries."
+   }
+  ],
+  "answer": [
+   "D"
+  ],
+  "explanation_ru": "Декомпозиция здесь в порядке, рецензенты это подтвердили, а ломается делегирование: координатор задаёт жёсткий рецепт поиска вместо цели. Гайд рекомендует, чтобы промпты координатора задавали цели и критерии качества, тогда субагент сам подбирает запросы, языки и типы источников. Дробление на 12 подтем (A) повторит тот же рецепт в 12 местах вместе с теми же пропусками.",
+  "why_wrong_ru": {
+   "A": "Декомпозиция уже признана полной; 12 подтем с тем же рецептом размножат ту же проблему.",
+   "B": "Больше запросов по тому же шаблону дадут больше новостей, а не законы и консультации регуляторов.",
+   "C": "Фильтр отбрасывает новости, но не находит первоисточники, которых нет в выдаче, и покрытие только упадёт."
+  },
+  "takeaway_ru": "Подтемы верные, а находки слабые: замени рецепт в промпте на цель и критерии качества.",
+  "signal_ru": "\"Reviewers agree this split covers the topic\" и \"Run exactly 3 searches\" → проблема в процедурном промпте делегирования, а не в декомпозиции."
+ },
+ {
+  "id": "f-tools-01",
+  "domain": 2,
+  "task": "2.4",
+  "scenario": 4,
+  "focus": "Инструменты и поиск по коду",
+  "targets": [
+   "d2-08"
+  ],
+  "type": "multi",
+  "select": 2,
+  "stem": "Your productivity agent connects to an internal MCP server for the incident platform, and traces show two problems. (1) The tool search_incidents, described as \"Searches incidents,\" returns root causes, linked commits, and fix PRs from 12,000 past incidents, yet for \"has this error happened before?\" the agent Greps local log files in 80% of sessions. (2) Before answering on-call questions, the agent calls list_runbooks and get_runbook 6-9 times just to learn which of 140 runbooks exist. Which TWO changes should you make? (Select TWO.)",
+  "options": [
+   {
+    "key": "A",
+    "text": "Expand search_incidents' description with what it returns, example queries, and when it beats Grep on local logs."
+   },
+   {
+    "key": "B",
+    "text": "Move the server entry from .mcp.json to ~/.claude.json so that its tools take priority over built-in tools such as Grep."
+   },
+   {
+    "key": "C",
+    "text": "Expose the runbook index as an MCP resource, so the agent can see which runbooks exist without exploratory tool calls."
+   },
+   {
+    "key": "D",
+    "text": "Replace search_incidents with an MCP resource listing all past incidents, so the agent reads it instead of Grepping."
+   },
+   {
+    "key": "E",
+    "text": "Add few-shot examples of list_runbooks calls to the system prompt so the agent explores the runbook list in fewer turns."
+   }
+  ],
+  "answer": [
+   "A",
+   "C"
+  ],
+  "explanation_ru": "Каждый вариант оценивается отдельно, в стеме две разные подзадачи. A решает подзадачу 1: агент выбирает инструмент по описанию, а \"Searches incidents\" не объясняет, чем он лучше Grep по логам. C решает подзадачу 2: каталог runbook как MCP resource даёт агенту видимость доступных данных без разведывательных вызовов. Ловушка D меняет решения местами: resource подходит для каталога, а поиск инцидентов по тексту ошибки остаётся параметризованным tool.",
+  "why_wrong_ru": {
+   "B": "Область конфигурации не задаёт приоритет: инструменты всех серверов доступны одновременно, а в ~/.claude.json сервер станет личным.",
+   "D": "Поиск по 12 000 инцидентов по тексту ошибки это параметризованный запрос, ему нужен tool с хорошим описанием, а не полный список.",
+   "E": "Few-shot учит, как вызывать list_runbooks, но не убирает сами разведывательные вызовы."
+  },
+  "takeaway_ru": "Инструмент игнорируют: улучши описание. Агент выясняет, что вообще есть: опубликуй каталог как resource.",
+  "signal_ru": "\"Described as Searches incidents\" при Grep вместо него → описание. \"Just to learn which of 140 runbooks exist\" → каталог как MCP resource."
+ },
+ {
+  "id": "f-tools-02",
+  "domain": 2,
+  "task": "2.5",
+  "scenario": 4,
+  "focus": "Инструменты и поиск по коду",
+  "targets": [
+   "d2-11"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "Before adding a required tenant_id argument to is_enabled_v1() in core/flags.py, in a 4,000-file Python monorepo, your agent Greps for \"is_enabled_v1\" and finds 9 call sites. The same Grep shows two modules that import it, flags/__init__.py and utils/compat.py, and both modules are imported by about 140 files that never mention is_enabled_v1. The engineer wants a complete list of call sites to update. What should the agent do next?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Read flags/__init__.py and utils/compat.py to collect every name they export for the function, then Grep for each name."
+   },
+   {
+    "key": "B",
+    "text": "Read all 140 files that import the two wrapper modules, so that every possible use of the function is checked in full context."
+   },
+   {
+    "key": "C",
+    "text": "Rerun Grep with the regex \"is_enabled.*\" so that it also matches variants of the function name anywhere in the codebase."
+   },
+   {
+    "key": "D",
+    "text": "Glob for **/*flag* to find every flag-related file, then Grep only inside those files for the original function name."
+   }
+  ],
+  "answer": [
+   "A"
+  ],
+  "explanation_ru": "Модули-обёртки могут переэкспортировать функцию под другими именами, поэтому поиск по исходному имени их вызовы не видит. Гайд описывает навык: сначала собрать все имена, которые экспортируют обёртки, затем Grep по каждому. Прочитать две обёртки вместо 140 импортирующих файлов и есть инкрементальный подход: Read для следования импортам, Grep для поиска по содержимому.",
+  "why_wrong_ru": {
+   "B": "Чтение 140 файлов целиком тратит контекст; достаточно узнать имена в двух обёртках и найти их через Grep.",
+   "C": "Алиас может называться совсем иначе, например flag_on, и регулярное выражение по исходному имени его не найдёт.",
+   "D": "Glob ищет по путям, а вызовы лежат в файлах с любыми именами, и Grep по исходному имени алиасы всё равно пропустит."
+  },
+  "takeaway_ru": "Обёртки переэкспортируют функцию: прочитай их экспорты, затем Grep по каждому имени.",
+  "signal_ru": "\"Imported by about 140 files that never mention is_enabled_v1\" → вызовы идут через другие имена; читай две обёртки, а не 140 файлов."
+ },
+ {
+  "id": "f-tools-03",
+  "domain": 2,
+  "task": "2.5",
+  "scenario": 4,
+  "focus": "Инструменты и поиск по коду",
+  "targets": [
+   "d2-11"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "An engineer asks your productivity agent: \"When Stripe calls POST /webhooks/stripe, how does the event end up in the payments table?\" The repository has 3,100 files, and the engineer has never worked in it. The agent begins by Reading all 212 files under src/webhooks/ and src/db/, fills most of its context, and its answer describes \"typical webhook handling\" rather than the actual classes involved. Which approach should the agent use instead?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Glob **/*webhook* to list related files, then Read every match in alphabetical order before starting to trace the flow."
+   },
+   {
+    "key": "B",
+    "text": "Read the 212 files in batches and run /compact between batches, so that the context window never overflows during the trace."
+   },
+   {
+    "key": "C",
+    "text": "Grep for the route \"/webhooks/stripe\" to find its handler, then Read that file and follow its imports to the database."
+   },
+   {
+    "key": "D",
+    "text": "Glob **/*.ts under src/ to build a full file map, then Read the largest files first, since they usually hold the core logic."
+   }
+  ],
+  "answer": [
+   "C"
+  ],
+  "explanation_ru": "Гайд рекомендует строить понимание кода инкрементально: Grep находит точку входа по содержимому, затем Read идёт по импортам по цепочке. Чтение всех 212 файлов заранее заполняет контекст, и модель отвечает общими шаблонами вместо конкретных классов. /compact (B) сжимает уже прочитанное, но не устраняет причину: читать всё не нужно.",
+  "why_wrong_ru": {
+   "A": "Glob ищет по именам файлов, а цепочку вызовов определяет содержимое; чтение всех совпадений повторяет ошибку.",
+   "B": "/compact уменьшает накопленный контекст, но чтение всех файлов подряд остаётся лишней работой, а детали теряются при сжатии.",
+   "D": "Размер файла не указывает на путь запроса; карта всех .ts файлов ничего не говорит о потоке данных."
+  },
+  "takeaway_ru": "Незнакомый код: Grep находит точку входа, Read идёт по импортам. Не читай всё заранее.",
+  "signal_ru": "Известен конкретный маршрут \"POST /webhooks/stripe\" → Grep по содержимому, затем Read по импортам. Glob ищет имена файлов, /compact не отменяет лишнего чтения."
+ },
+ {
+  "id": "f-tools-04",
+  "domain": 2,
+  "task": "2.1",
+  "scenario": 4,
+  "focus": "Инструменты и поиск по коду",
+  "targets": [
+   "d2-08"
+  ],
+  "type": "single",
+  "select": 1,
+  "stem": "After an earlier fix, the MCP tool trace_symbol now has a detailed description: it returns cross-repository callers and call graphs, lists example queries, and says when to prefer it over Grep. Yet its use for \"who calls X?\" questions rose only from 6% to 9%. The agent's system prompt, written before the MCP server existed, begins: \"For any code question, first grep the repository, then read the matching files.\" What is the most effective next step?",
+  "options": [
+   {
+    "key": "A",
+    "text": "Expand trace_symbol's description further with more example queries and a table comparing its output with Grep's output."
+   },
+   {
+    "key": "B",
+    "text": "Rewrite the grep-first instruction in the system prompt so it no longer routes every code question to Grep."
+   },
+   {
+    "key": "C",
+    "text": "Remove Grep from the agent's allowed tools, since the description fix has shown that descriptions alone cannot change selection."
+   },
+   {
+    "key": "D",
+    "text": "Add a hook that rejects Grep calls whose pattern looks like a function name and returns a hint to call trace_symbol instead."
+   }
+  ],
+  "answer": [
+   "B"
+  ],
+  "explanation_ru": "Описание инструмента уже подробное, а выбор почти не изменился, значит его перебивает инструкция в system prompt. Гайд прямо называет этот навык: проверять system prompt на keyword-инструкции, которые переопределяют хорошо написанные описания инструментов. Фраза \"first grep the repository\" привязывает любой вопрос о коде к Grep, и её нужно переписать. Ещё одно расширение описания (A) лечит причину, которой уже нет.",
+  "why_wrong_ru": {
+   "A": "Описание уже содержит возможности, примеры и границы; корень проблемы теперь в system prompt.",
+   "C": "Grep нужен для поиска по содержимому, а описание не сработало из-за конфликтующей инструкции, а не в принципе.",
+   "D": "Хук на эвристике шаблона ломает легитимный поиск и маскирует проблему, которую решает одна правка промпта."
+  },
+  "takeaway_ru": "Описание хорошее, а выбор плохой: ищи в system prompt инструкцию, привязанную к инструменту.",
+  "signal_ru": "\"Now has a detailed description\" и \"first grep the repository\" в system prompt → keyword-инструкция перебивает описание; расширять описание дальше бесполезно."
+ }
+]
