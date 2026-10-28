@@ -1,69 +1,69 @@
-# Тренажёр CCAR-F
+# CCAR-F Trainer
 
-Неофициальный тренажёр к Claude Certified Architect – Foundations. Один сайт, пять наборов вопросов, переключение вверху страницы. В каждом наборе есть тренировка с разбором, пробный экзамен с таймером и конспект.
+An unofficial trainer for Claude Certified Architect – Foundations. One site, five question sets, switched at the top of the page. Each set has a practice mode with explanations, a timed mock exam, and a study sheet.
 
-| Набор | Вопросов | Что внутри |
+| Set | Questions | What's inside |
 |---|---|---|
-| Гайд | 73 | 12 официальных примеров из Exam Guide v1.0 и вопросы по его task statements |
-| Шпаргалка | 60 | по community-шпаргалке, сверено с гайдом и документацией |
-| Трудные темы | 57 | соседние ловушки: контекст, схемы, критерии, конфигурация Claude Code |
-| Трудные темы 2 | 46 | второй раунд: схемы, координатор, применение критериев |
-| Финал | 20 | шпаргалка на 10–15 минут и короткий тест на утро экзамена |
+| Guide | 73 | 12 official examples from the Exam Guide v1.0 and questions on its task statements |
+| Cheat sheet | 60 | Based on a community cheat sheet, checked against the guide and documentation |
+| Hard topics | 57 | Neighboring traps: context, diagrams, criteria, Claude Code configuration |
+| Hard topics 2 | 46 | Second round: diagrams, coordinator, applying criteria |
+| Final | 20 | A 10–15 minute cheat sheet and a short quiz for the morning of the exam |
 
-Вопросы на английском, как на экзамене. Разборы на русском. Прогресс каждого набора хранится в браузере отдельно.
+Questions are in English, as on the exam. Explanations are in Russian. Progress for each set is stored separately in the browser.
 
-## Где хранится прогресс и как его сбросить
+## Where progress is stored and how to reset it
 
-Только в `localStorage` браузера того, кто проходит тест. На сервер и на GitHub ничего не уходит, другие участники команды чужих ответов не видят. Ключи: `ccarf.v1`, `ccarf.sheet.v1`, `ccarf.focus.v1`, `ccarf.focus2.v1`, `ccarf.final.v1` (по набору) и `ccarf.site.set` (последний открытый набор).
+Only in the `localStorage` of the browser of the person taking the test. Nothing is sent to a server or to GitHub, and other team members cannot see anyone else's answers. Keys: `ccarf.v1`, `ccarf.sheet.v1`, `ccarf.focus.v1`, `ccarf.focus2.v1`, `ccarf.final.v1` (one per set) and `ccarf.site.set` (the last opened set).
 
-- Один набор: вкладка «Конспект» → «Сбросить прогресс».
-- Все наборы: кнопка «Сбросить прогресс во всех наборах» внизу любой страницы.
-- Чужой компьютер: откройте сайт в окне инкогнито, после его закрытия ничего не останется.
+- One set: the "Study sheet" tab → "Reset progress".
+- All sets: the "Reset progress in all sets" button at the bottom of any page.
+- Shared computer: open the site in a private window; nothing is left behind after you close it.
 
-## Структура
+## Structure
 
 ```
-index.html            единственная страница сайта
-assets/app.js         движок: тренировка, экзамен, конспект, переключение наборов
-assets/app.css        общие стили
-sets/index.json       список и порядок наборов
-sets/<набор>/         источник правды
-  set.json            тексты, фильтр, параметры экзамена, палитра
-  notes.html          вкладка «Конспект»
-  questions/*.json    вопросы
-data/*.js             то же самое, упакованное для страницы (генерируется, руками не править)
-dist/ccar-f-offline.html   автономный файл со всем внутри (генерируется)
-tools/check.js        проверка всех наборов
+index.html            the only page of the site
+assets/app.js         engine: practice, exam, study sheet, switching between sets
+assets/app.css        shared styles
+sets/index.json       list and order of the sets
+sets/<set>/           source of truth
+  set.json            texts, filter, exam parameters, palette
+  notes.html          the "Study sheet" tab
+  questions/*.json    questions
+data/*.js             the same content packed for the page (generated, do not edit by hand)
+dist/ccar-f-offline.html   standalone file with everything inside (generated)
+tools/check.js        checks all sets
 tools/pack.js         sets/ → data/
 tools/bundle.js       sets/ → dist/ccar-f-offline.html
 ```
 
-Ссылка на набор и вкладку: `#focus/exam`, `#final/notes`.
+Link to a set and tab: `#focus/exam`, `#final/notes`.
 
-## Правки
+## Editing
 
-- Вопрос: `sets/<набор>/questions/*.json`.
-- Тексты, цвета, экзамен набора: `sets/<набор>/set.json`.
-- Конспект: `sets/<набор>/notes.html`.
-- Логика и вёрстка для всех наборов: `assets/`.
-- Новый набор: папка в `sets/` и её имя в `sets/index.json`. У набора должен быть свой `storageKey`.
+- Question: `sets/<set>/questions/*.json`.
+- Texts, colors, exam settings of a set: `sets/<set>/set.json`.
+- Study sheet: `sets/<set>/notes.html`.
+- Logic and layout for all sets: `assets/`.
+- New set: a folder in `sets/` and its name in `sets/index.json`. The set needs its own `storageKey`.
 
-После любой правки в `sets/` запустите `node tools/pack.js`: он проверяет каждый вопрос (поля, варианты, ответы, разборы неверных вариантов), при ошибках останавливается, иначе обновляет `data/`. Коммитьте `sets/` и `data/` вместе. Проверить, что `data/` не отстала: `node tools/pack.js --check`.
+After any change in `sets/`, run `node tools/pack.js`. It checks every question (fields, options, answers, explanations of wrong options), stops on errors, and otherwise updates `data/`. Commit `sets/` and `data/` together. To verify that `data/` is up to date, run `node tools/pack.js --check`.
 
-## Открыть локально и отправить коллеге
+## Open locally and send to a colleague
 
-- `index.html` открывается двойным кликом, сервер не нужен. Страница подключает данные через `<script>`, а не `fetch`.
-- `node tools/bundle.js` собирает `dist/ccar-f-offline.html` (около 0,8 МБ) со стилями, движком и всеми наборами внутри. Его можно отправить в Slack или на почту. Из внешнего нужны только шрифты Google, без них страница работает на запасных.
-- Прогресс при открытии файлов с диска хранится по правилам браузера: в Chrome общий для всех локальных файлов, в Firefox отдельный для каждого. Для постоянного прогресса надёжнее GitHub Pages.
+- `index.html` opens with a double-click; no server is needed. The page loads data via `<script>`, not `fetch`.
+- `node tools/bundle.js` builds `dist/ccar-f-offline.html` (about 0.8 MB) with the styles, the engine and all sets inside. You can send it via Slack or email. Only Google Fonts come from outside; without them the page uses fallback fonts.
+- When the files are opened from disk, progress follows the browser's rules: in Chrome it is shared across all local files, in Firefox each file has its own. For progress that persists reliably, GitHub Pages is the better choice.
 
-## Публикация на GitHub Pages
+## Publishing to GitHub Pages
 
-1. Создайте репозиторий и положите в его корень содержимое этой папки: `index.html`, `assets/`, `data/`, `sets/`, `tools/`, `README.md`, `.nojekyll`. Папка `dist/` на сайте не нужна.
-2. Settings → Pages → Build and deployment → Source: Deploy from a branch, ветка `main`, папка `/ (root)`.
-3. Через минуту сайт будет по адресу `https://<user>.github.io/<repo>/`.
+1. Create a repository and put the contents of this folder in its root: `index.html`, `assets/`, `data/`, `sets/`, `tools/`, `README.md`, `.nojekyll`. The `dist/` folder is not needed on the site.
+2. Settings → Pages → Build and deployment → Source: Deploy from a branch, branch `master`, folder `/ (root)`.
+3. After about a minute the site is available at `https://<user>.github.io/<repo>/`.
 
-Pages для приватного репозитория доступен только на платных планах GitHub. На бесплатном плане репозиторий и сайт будут публичными.
+GitHub Pages for a private repository is available only on paid GitHub plans. On the free plan, the repository and the site are public.
 
 ---
 
-Не связан с Anthropic. Это не вопросы реального экзамена. Официальный гайд: [Exam Guide v1.0 (PDF)](https://everpath-course-content.s3-accelerate.amazonaws.com/instructor%2F6nizmqk8tpzpfjvt6qmmav7rh%2Fpublic%2F1783542750%2FClaude+Certified+Architect+%E2%80%93+Foundations+Exam+Guide.pdf).
+Not affiliated with Anthropic. These are not real exam questions. Official guide: [Exam Guide v1.0 (PDF)](https://everpath-course-content.s3-accelerate.amazonaws.com/instructor%2F6nizmqk8tpzpfjvt6qmmav7rh%2Fpublic%2F1783542750%2FClaude+Certified+Architect+%E2%80%93+Foundations+Exam+Guide.pdf).
